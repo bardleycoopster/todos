@@ -1,14 +1,55 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import App from "./App";
-// import reportWebVitals from "./reportWebVitals";
+import {
+  ApolloClient,
+  HttpLink,
+  ApolloLink,
+  InMemoryCache,
+  concat,
+} from "@apollo/client";
+import { persistCache } from "apollo3-cache-persist";
+import * as serviceWorkerRegistration from "./serviceWorkerRegistration";
 
-ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-  document.getElementById("root")
-);
+async function main() {
+  const cache = new InMemoryCache();
+
+  await persistCache({
+    cache,
+    storage: window.localStorage,
+  });
+
+  const httpLink = new HttpLink({ uri: "/graphql" });
+
+  const authMiddleware = new ApolloLink((operation, forward) => {
+    const token = localStorage.getItem("token");
+
+    // add the authorization to the headers
+    operation.setContext({
+      headers: {
+        authorization: token ? `Bearer ${token}` : "",
+      },
+    });
+
+    return forward(operation);
+  });
+
+  const client = new ApolloClient({
+    cache: cache,
+    link: concat(authMiddleware, httpLink),
+  });
+
+  ReactDOM.render(
+    <React.StrictMode>
+      <App apolloClient={client} />
+    </React.StrictMode>,
+    document.getElementById("root")
+  );
+}
+
+main();
+
+serviceWorkerRegistration.register();
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

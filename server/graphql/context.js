@@ -4,10 +4,11 @@ const config = require("../config");
 
 module.exports = ({ req }) => {
   let user;
-  let token = req.headers.authorization;
-  if (token) {
-    token = token.replace("Bearer ", "");
+  let token =
+    req.headers.authorization &&
+    req.headers.authorization.replace("Bearer ", "");
 
+  if (token) {
     // verifies secret and checks exp
     jwt.verify(token, config.jwt.secret, (err, decoded) => {
       if (err) {

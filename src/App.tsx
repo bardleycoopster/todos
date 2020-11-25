@@ -1,29 +1,31 @@
 import React from "react";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
-import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
+import {
+  ApolloClient,
+  ApolloProvider,
+  NormalizedCacheObject,
+} from "@apollo/client";
 
 import Home from "routes/Home";
+import Lists from "routes/Lists";
 import List from "routes/List";
 import CreateAccount from "routes/CreateAccount";
 import Login from "routes/Login";
 import Profile from "routes/Profile";
 
-const token = localStorage.getItem("token");
+import "styles/generated/tailwind.css";
 
-const client = new ApolloClient({
-  uri: "/graphql",
-  cache: new InMemoryCache(),
-  headers: {
-    authorization: token ? `Bearer ${token}` : "",
-  },
-});
+interface Props {
+  apolloClient: ApolloClient<NormalizedCacheObject>;
+}
 
-function App() {
+function App({ apolloClient }: Props) {
   return (
-    <ApolloProvider client={client}>
+    <ApolloProvider client={apolloClient}>
       <Router>
         <Switch>
           <Route exact path="/" component={Home} />
+          <Route exact path="/lists" component={Lists} />
           <Route exact path="/lists/:listId" component={List} />
           <Route exact path="/login" component={Login} />
           <Route exact path="/create-account" component={CreateAccount} />

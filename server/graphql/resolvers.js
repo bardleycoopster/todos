@@ -238,7 +238,6 @@ module.exports = {
         throw new ApolloError("DB query failed", "BAD_REQUEST");
       }
 
-      console.log("done", result.rows[0]);
       return convertDbRowToListItem(result.rows[0]);
     },
     updateListItem: async (parent, { input: { description, position } }) => {

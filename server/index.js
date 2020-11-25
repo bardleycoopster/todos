@@ -18,11 +18,11 @@ apolloServer.applyMiddleware({ app });
 // app.use("/api", api);
 
 // Serve static assets
-app.use(express.static(path.resolve(__dirname, "..", "client", "build")));
+app.use(express.static(path.resolve(__dirname, "..", "build")));
 
-// Always return the main index.html, so react-router render the route in the client
+// Always return the main index.html, so react-router render the route in the src
 app.get("*", (req, res) => {
-  res.sendFile(path.resolve(__dirname, "..", "client", "build", "index.html"));
+  res.sendFile(path.resolve(__dirname, "..", "build", "index.html"));
 });
 
 async function start() {
