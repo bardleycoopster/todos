@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useMutation, gql } from "@apollo/client";
 import { useHistory } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { Link, Redirect } from "react-router-dom";
 import Header from "components/Header";
 
 const CREATE_ACCOUNT_MUTATION = gql`
@@ -19,6 +19,11 @@ const CreateAccount = () => {
   const [error, setError] = useState("");
   const [createAccount] = useMutation(CREATE_ACCOUNT_MUTATION);
   const history = useHistory<any>();
+
+  const token = localStorage.getItem("token");
+  if (token) {
+    return <Redirect to="/lists" />;
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

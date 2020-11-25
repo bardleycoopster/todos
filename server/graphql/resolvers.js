@@ -61,6 +61,22 @@ module.exports = {
         email: result.rows[0].email,
       };
     },
+    lists: async (parent, args, { user }) => {
+      if (!user) {
+        throw new ApolloError("Not authenticated", "BAD_REQUEST");
+      }
+
+      let result;
+      try {
+        result = await db.query("select * from lists where user_id = $1;", [
+          user.id,
+        ]);
+      } catch (e) {
+        throw new ApolloError("DB query failed", "BAD_REQUEST");
+      }
+
+      return result.rows.map(convertDbRowToList);
+    },
     list: async (_, { id }, { user }) => {
       if (!user) {
         throw new ApolloError("Not authenticated", "BAD_REQUEST");

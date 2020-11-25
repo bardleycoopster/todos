@@ -20,7 +20,6 @@ const Login = () => {
   const history = useHistory<any>();
 
   const token = localStorage.getItem("token");
-
   if (token) {
     return <Redirect to="/lists" />;
   }

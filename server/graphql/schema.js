@@ -49,7 +49,7 @@ module.exports = gql`
 
   input CreateListInput {
     name: String!
-    position: Int!
+    position: Int
   }
 
   input UpdateListInput {
@@ -75,6 +75,7 @@ module.exports = gql`
 
   type Query {
     user: User
+    lists: [List!]!
     list(id: ID!): List!
   }
 

@@ -4,6 +4,7 @@ interface Props {
   children?: React.ReactNode;
   onClick?: () => void;
   dark?: boolean;
+  disabled?: boolean;
 }
 
 const defaultProps: Props = {

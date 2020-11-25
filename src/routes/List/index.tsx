@@ -1,9 +1,11 @@
 import React, { useState, useRef } from "react";
+import { Redirect } from "react-router-dom";
 import { useQuery, useMutation, gql } from "@apollo/client";
 import produce from "immer";
-import { Redirect } from "react-router-dom";
+
 import Header from "components/Header";
 import Button from "components/Button";
+
 const LIST_QUERY = gql`
   query list($id: ID!) {
     list(id: $id) {
@@ -73,6 +75,13 @@ const List = ({ match }: Props) => {
           draft.list.items.push(newListItem);
         }),
       });
+    },
+    optimisticResponse: {
+      createListItem: {
+        __typename: "ListItem",
+        id: "-1",
+        description: newTodoText,
+      },
     },
   });
 

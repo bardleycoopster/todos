@@ -11,6 +11,7 @@
 # production
 /build
 src/styles/generated
+src/types/graphql-schema-types.ts
 
 # misc
 .DS_Store
