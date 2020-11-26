@@ -41,7 +41,7 @@ async function start() {
     await db.verifyConnection();
   } catch (e) {
     console.error(e);
-    return;
+    process.exit(2);
   }
 
   console.log("DB connection verified");

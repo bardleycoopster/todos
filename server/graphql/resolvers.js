@@ -14,6 +14,8 @@ const convertDbRowToList = (row) => {
     name: row.name,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    ownerId: row.owner_id,
+    shared: row.is_shared,
   };
 };
 
@@ -24,76 +26,107 @@ const convertDbRowToListItem = (row) => {
 
   return {
     id: row.id,
+    listId: row.list_id,
     name: row.name,
     description: row.description,
     complete: row.complete,
     position: row.position,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    lastUpdatedUser: row.last_user_id,
+    lastUpdatedUserId: row.last_user_id,
   };
+};
+
+const getUser = async (userId) => {
+  let result;
+  try {
+    result = await db.query("select * from users where id = $1;", [userId]);
+  } catch (e) {
+    throw new ApolloError("Invalid user query", "BAD_REQUEST");
+  }
+
+  if (result.rowCount === 0) {
+    throw new ApolloError("User not found", "BAD_REQUEST");
+  }
+
+  return {
+    id: userId,
+    username: result.rows[0].username,
+    email: result.rows[0].email,
+  };
+};
+
+const getList = async (listId, userId) => {
+  let result;
+  try {
+    result = await db.query(
+      `select 
+          l.*, 
+          coalesce(sl.owner_id, l.user_id) as owner_id,
+          sl.owner_id is not null as is_shared
+      from lists l
+      left join shared_lists sl on l.user_id = sl.owner_id
+      where l.id = $1 and (l.user_id = $2 or sl.guest_id = $2)
+      limit 1;`,
+      [listId, userId]
+    );
+  } catch (e) {
+    throw new ApolloError("DB query failed", "BAD_REQUEST");
+  }
+
+  if (result.rowCount === 0) {
+    throw new ApolloError("List not found", "BAD_REQUEST");
+  }
+
+  return convertDbRowToList(result.rows[0]);
+};
+
+const getLists = async (userId) => {
+  let result;
+  try {
+    result = await db.query(
+      `select 
+            l.*, 
+            coalesce(sl.owner_id, l.user_id) as owner_id,
+            sl.owner_id is not null as is_shared 
+          from lists l
+          left join shared_lists sl 
+              on sl.owner_id = l.user_id
+          where l.user_id = $1 or sl.guest_id = $1;`,
+      [userId]
+    );
+  } catch (e) {
+    throw new ApolloError("DB query failed", "BAD_REQUEST");
+  }
+
+  return result.rows.map(convertDbRowToList);
+};
+
+const getListItems = async (listId) => {
+  let result;
+  try {
+    result = await db.query(
+      "select * from list_items where list_id = $1 order by position;",
+      [listId]
+    );
+  } catch (e) {
+    throw new ApolloError("DB query failed", "BAD_REQUEST");
+  }
+
+  return result.rows.map(convertDbRowToListItem);
 };
 
 // Provide resolver functions for your schema fields
 module.exports = {
   Query: {
     user: async (_, args, { user }) => {
-      if (!user) {
-        throw new ApolloError("Not authenticated", "BAD_REQUEST");
-      }
-
-      let result;
-      try {
-        result = await db.query("select * from users where id = $1;", [
-          user.id,
-        ]);
-      } catch (e) {
-        throw new ApolloError("Invalid user query", "BAD_REQUEST");
-      }
-
-      if (result.rowCount === 0) {
-        throw new ApolloError("User not found", "BAD_REQUEST");
-      }
-
-      return {
-        id: user.id,
-        username: user.username,
-        email: result.rows[0].email,
-      };
+      return getUser(user.id);
     },
     lists: async (parent, args, { user }) => {
-      if (!user) {
-        throw new ApolloError("Not authenticated", "BAD_REQUEST");
-      }
-
-      let result;
-      try {
-        result = await db.query("select * from lists where user_id = $1;", [
-          user.id,
-        ]);
-      } catch (e) {
-        throw new ApolloError("DB query failed", "BAD_REQUEST");
-      }
-
-      return result.rows.map(convertDbRowToList);
+      return getLists(user.id);
     },
     list: async (_, { id }, { user }) => {
-      if (!user) {
-        throw new ApolloError("Not authenticated", "BAD_REQUEST");
-      }
-
-      let result;
-      try {
-        result = await db.query("select * from lists where id = $1;", [id]);
-      } catch (e) {
-        throw new ApolloError("DB query failed", "BAD_REQUEST");
-      }
-
-      if (result.rowCount === 0) {
-        throw new ApolloError("List not found", "BAD_REQUEST");
-      }
-
-      return convertDbRowToList(result.rows[0]);
+      return getList(id, user.id);
     },
   },
   Mutation: {
@@ -217,6 +250,41 @@ module.exports = {
 
       return result.rowCount === 1;
     },
+    shareLists: async (parent, { input: { username, email } }, { user }) => {
+      let userResult;
+      try {
+        userResult = await db.query(
+          "select id from users where username=$1 or email=$2 limit 1;",
+          [username, email]
+        );
+      } catch (e) {
+        throw new ApolloError("DB query failed", "BAD_REQUEST");
+      }
+
+      if (userResult.rowCount !== 1) {
+        throw new ApolloError("User not found", "BAD_REQUEST");
+      }
+
+      const guestId = userResult.rows[0].id;
+
+      if (guestId === user.id) {
+        throw new ApolloError("Cannot share with yourself", "BAD_REQUEST");
+      }
+
+      let result;
+      try {
+        result = await db.query(
+          `insert into shared_lists (owner_id, guest_id) 
+           values ($1, $2)
+           on conflict(owner_id, guest_id) do nothing;`,
+          [user.id, guestId]
+        );
+      } catch (e) {
+        throw new ApolloError("DB query failed", "BAD_REQUEST");
+      }
+
+      return result.rowCount === 1;
+    },
     createListItem: async (
       _,
       { input: { listId, description, position } },
@@ -226,20 +294,16 @@ module.exports = {
       try {
         if (position != null) {
           result = await db.transaction(async (query) => {
-            console.log("inner query 1", listId, position);
             await query(
               "update list_items set position = position + 1 where position >= $2 and list_id = $1;",
               [listId, position]
             );
-            console.log("inner query 2");
             const innerResult = await query(
               "insert into list_items (list_id, description, position, last_user_id) values ($1, $2, $3, $4) returning *;",
               [listId, description, position, user.id]
             );
 
-            console.log("inner query 3");
             await query("select nextval('list_items_position_seq');");
-            console.log("inner query end");
 
             return innerResult;
           });
@@ -250,7 +314,6 @@ module.exports = {
           );
         }
       } catch (e) {
-        console.log("error: ", JSON.stringify(e));
         throw new ApolloError("DB query failed", "BAD_REQUEST");
       }
 
@@ -287,42 +350,23 @@ module.exports = {
   },
   User: {
     lists: async (parent, args) => {
-      let result;
-      try {
-        result = await db.query("select * from lists where user_id = $1", [
-          parent.id,
-        ]);
-      } catch (e) {
-        throw new ApolloError("DB query failed", "BAD_REQUEST");
-      }
-
-      return result.rows.map(convertDbRowToList);
+      return getLists(parent.id);
     },
   },
   List: {
     items: async (parent, args) => {
-      let result;
-      try {
-        result = await db.query(
-          "select * from list_items where list_id = $1 order by position;",
-          [parent.id]
-        );
-      } catch (e) {
-        throw new ApolloError("DB query failed", "BAD_REQUEST");
-      }
-
-      return result.rows.map(convertDbRowToListItem);
+      return getListItems(parent.id);
     },
-    owner: async () => {
-      throw new ApolloError("Not Implemented", "NOT_IMPLEMENTED");
+    owner: async (parent) => {
+      return getUser(parent.ownerId);
     },
   },
   ListItem: {
-    lastUpdatedUser: async () => {
-      throw new ApolloError("Not Implemented", "NOT_IMPLEMENTED");
+    lastUpdatedUser: async (parent) => {
+      return getUser(parent.lastUpdatedUserId);
     },
-    list: async () => {
-      throw new ApolloError("Not Implemented", "NOT_IMPLEMENTED");
+    list: async (parent, args, { user }) => {
+      return getList(parent.listId, user.id);
     },
   },
 };

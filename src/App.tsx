@@ -9,6 +9,7 @@ import {
 import Home from "routes/Home";
 import Lists from "routes/Lists";
 import List from "routes/List";
+import ShareLists from "routes/ShareLists";
 import CreateAccount from "routes/CreateAccount";
 import Login from "routes/Login";
 import Profile from "routes/Profile";
@@ -26,6 +27,7 @@ function App({ apolloClient }: Props) {
         <Switch>
           <Route exact path="/" component={Home} />
           <Route exact path="/lists" component={Lists} />
+          <Route exact path="/lists/share" component={ShareLists} />
           <Route exact path="/lists/:listId" component={List} />
           <Route exact path="/login" component={Login} />
           <Route exact path="/create-account" component={CreateAccount} />

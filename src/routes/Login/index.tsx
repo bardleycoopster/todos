@@ -3,6 +3,7 @@ import { useHistory, Redirect } from "react-router-dom";
 import { useLoginMutation } from "types/graphql-schema-types";
 
 import Header from "components/Header";
+import PageContent from "components/PageContent";
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -40,7 +41,7 @@ const Login = () => {
   return (
     <div>
       <Header />
-      <div className="max-w-sm mx-auto">
+      <PageContent>
         <h2 className="mt-5 text-center text-4xl">Login</h2>
         <form onSubmit={onSubmit}>
           <div className="mt-5">
@@ -76,7 +77,7 @@ const Login = () => {
             />
           </div>
         </form>
-      </div>
+      </PageContent>
       {error && (
         <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 max-w-lg min-w-lg mx-auto py-2 px-8  border-red-700 rounded-sm bg-gradient-to-br from-red-600 to-red-800">
           {error}

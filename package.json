@@ -44,7 +44,7 @@
   "scripts": {
     "build:style:dev": "postcss src/styles/index.css --watch -o src/styles/generated/tailwind.css --env development",
     "generate:types:dev": "graphql-codegen --watch",
-    "start:client": "sleep 5 & react-scripts start",
+    "start:client": "sleep 3 & react-scripts start",
     "start:server": "NODE_ENV=development nodemon --ignore '*.test.js' --watch server server/index.js",
     "start": "concurrently --kill-others --prefix-colors cyan,green,blue,magenta \"npm:build:style:dev\" \"npm:start:client\" \"npm:start:server\" \"npm:generate:types:dev\"",
     "build:style:prod": "postcss src/styles/index.css -o src/styles/generated/tailwind.css --env production",

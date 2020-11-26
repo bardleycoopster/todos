@@ -9,6 +9,7 @@ import {
 
 import Header from "components/Header";
 import Button from "components/Button";
+import PageContent from "components/PageContent";
 
 const Lists = () => {
   const [newListName, setNewListName] = useState("");
@@ -36,7 +37,6 @@ const Lists = () => {
     },
   });
 
-  // if (loading) return <p>Loading...</p>;
   if (error) return <p>Error :(</p>;
 
   const addTodoList = () => {
@@ -57,7 +57,7 @@ const Lists = () => {
   return (
     <div className="h-full">
       <Header />
-      <div className="max-w-lg mx-auto">
+      <PageContent>
         <h1 className="text-4xl text-center mt-4">Lists</h1>
 
         <ul>
@@ -86,7 +86,7 @@ const Lists = () => {
             Add new List
           </Button>
         </div>
-      </div>
+      </PageContent>
     </div>
   );
 };

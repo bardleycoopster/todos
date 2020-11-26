@@ -1,0 +1,3 @@
+mutation shareLists($input: ShareListsInput) {
+  shareLists(input: $input)
+}

@@ -11,6 +11,7 @@ import {
 
 import Header from "components/Header";
 import Button from "components/Button";
+import PageContent from "components/PageContent";
 
 interface Props {
   match: any;
@@ -120,7 +121,7 @@ const List = ({ match }: Props) => {
   return (
     <div className="h-screen">
       <Header />
-      <div className="max-w-lg mx-auto border-gray-600 md:border-r-2 md:border-l-2 px-4 shadow-xl h-full">
+      <PageContent>
         <h2 className="text-lg font-semibold py-4">
           Todo: {listData?.list.name}
         </h2>
@@ -199,7 +200,7 @@ const List = ({ match }: Props) => {
             </button>
           </div>
         </div>
-      </div>
+      </PageContent>
     </div>
   );
 };

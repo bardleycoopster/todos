@@ -34,5 +34,6 @@ create table shared_lists (
   guest_id integer not null references users(id) on delete cascade,
   enabled boolean not null default true,
   position serial not null,
-  unique(position) deferrable initially deferred
+  unique(position) deferrable initially deferred,
+  unique(owner_id, guest_id)
 );
