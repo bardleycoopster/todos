@@ -1,0 +1,12 @@
+query list($id: ID!) {
+  list(id: $id) {
+    id
+    name
+    items {
+      id
+      description
+      position
+      complete
+    }
+  }
+}

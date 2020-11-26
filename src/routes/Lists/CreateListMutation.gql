@@ -1,0 +1,6 @@
+mutation createList($input: CreateListInput) {
+  createList(input: $input) {
+    id
+    name
+  }
+}

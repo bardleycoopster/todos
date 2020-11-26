@@ -1,0 +1,8 @@
+mutation createListItem($input: CreateListItemInput) {
+  createListItem(input: $input) {
+    id
+    description
+    position
+    complete
+  }
+}

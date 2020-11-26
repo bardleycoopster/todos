@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Link, Redirect } from "react-router-dom";
-import { gql } from "@apollo/client";
 import produce from "immer";
 import {
   useCreateListMutation,
@@ -10,24 +9,6 @@ import {
 
 import Header from "components/Header";
 import Button from "components/Button";
-
-const LISTS_QUERY = gql`
-  query lists {
-    lists {
-      id
-      name
-    }
-  }
-`;
-
-const CREATE_LIST_MUTATION = gql`
-  mutation createList($input: CreateListInput) {
-    createList(input: $input) {
-      id
-      name
-    }
-  }
-`;
 
 const Lists = () => {
   const [newListName, setNewListName] = useState("");

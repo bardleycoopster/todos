@@ -1,23 +1,15 @@
 import React, { useState } from "react";
-import { useMutation, gql } from "@apollo/client";
+import { useCreateAccountMutation } from "types/graphql-schema-types";
 import { useHistory } from "react-router-dom";
 import { Link, Redirect } from "react-router-dom";
 import Header from "components/Header";
-
-const CREATE_ACCOUNT_MUTATION = gql`
-  mutation createAccount($input: CreateAccountInput) {
-    createAccount(input: $input) {
-      jwt
-    }
-  }
-`;
 
 const CreateAccount = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [createAccount] = useMutation(CREATE_ACCOUNT_MUTATION);
+  const [createAccount] = useCreateAccountMutation();
   const history = useHistory<any>();
 
   const token = localStorage.getItem("token");
@@ -32,12 +24,14 @@ const CreateAccount = () => {
         variables: { input: { username, password, email } },
       });
 
-      localStorage.setItem("token", resp.data.createAccount.jwt);
+      if (resp.data) {
+        localStorage.setItem("token", resp.data.createAccount.jwt);
 
-      if (history.location.state?.referrer) {
-        history.replace(history.location.state.referrer);
-      } else {
-        history.replace("/lists");
+        if (history.location.state?.referrer) {
+          history.replace(history.location.state.referrer);
+        } else {
+          history.replace("/lists");
+        }
       }
     } catch (e) {
       setError("An error occurred. Please try again.");

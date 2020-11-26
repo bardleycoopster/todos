@@ -1,21 +1,32 @@
 const path = require("path");
 const express = require("express");
 const { ApolloServer } = require("apollo-server-express");
-const graphqlSchema = require("./graphql/schema");
 const graphqlResolvers = require("./graphql/resolvers");
 const context = require("./graphql/context");
 const db = require("./db");
+const { loadSchemaSync } = require("@graphql-tools/load");
+const { GraphQLFileLoader } = require("@graphql-tools/graphql-file-loader");
+const { addResolversToSchema } = require("@graphql-tools/schema");
+
+const graphqlSchema = loadSchemaSync(
+  path.resolve(__dirname, "graphql", "schema.graphql"),
+  {
+    loaders: [new GraphQLFileLoader()],
+  }
+);
+
+const schemaWithResolvers = addResolversToSchema({
+  schema: graphqlSchema,
+  resolvers: graphqlResolvers,
+});
 
 const apolloServer = new ApolloServer({
-  typeDefs: graphqlSchema,
-  resolvers: graphqlResolvers,
+  schema: schemaWithResolvers,
   context,
 });
 
 const app = express();
 apolloServer.applyMiddleware({ app });
-
-// app.use("/api", api);
 
 // Serve static assets
 app.use(express.static(path.resolve(__dirname, "..", "build")));

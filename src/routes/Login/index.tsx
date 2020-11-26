@@ -1,22 +1,14 @@
 import React, { useState } from "react";
-import { useMutation, gql } from "@apollo/client";
 import { useHistory, Redirect } from "react-router-dom";
+import { useLoginMutation } from "types/graphql-schema-types";
 
 import Header from "components/Header";
-
-const LOGIN_MUTATION = gql`
-  mutation login($input: LoginInput) {
-    login(input: $input) {
-      jwt
-    }
-  }
-`;
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [login] = useMutation(LOGIN_MUTATION);
+  const [login] = useLoginMutation();
   const history = useHistory<any>();
 
   const token = localStorage.getItem("token");
@@ -30,12 +22,14 @@ const Login = () => {
       const resp = await login({
         variables: { input: { username, password } },
       });
-      localStorage.setItem("token", resp.data.login.jwt);
+      if (resp.data) {
+        localStorage.setItem("token", resp.data.login.jwt);
 
-      if (history.location.state?.referrer) {
-        history.replace(history.location.state.referrer);
-      } else {
-        history.replace("/lists");
+        if (history.location.state?.referrer) {
+          history.replace(history.location.state.referrer);
+        } else {
+          history.replace("/lists");
+        }
       }
     } catch (e) {
       setError("An error occurred. Please try again.");

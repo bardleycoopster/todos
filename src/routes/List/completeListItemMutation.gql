@@ -1,0 +1,8 @@
+mutation completeListItem($input: CompleteListItemInput) {
+  completeListItem(input: $input) {
+    id
+    description
+    position
+    complete
+  }
+}

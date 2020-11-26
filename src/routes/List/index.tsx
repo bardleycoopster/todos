@@ -1,53 +1,16 @@
 import React, { useState, useRef } from "react";
 import { Redirect } from "react-router-dom";
-import { useQuery, useMutation, gql } from "@apollo/client";
 import produce from "immer";
+import {
+  useListQuery,
+  useCreateListItemMutation,
+  useCompleteListItemMutation,
+  useRemoveCompletedListItemsMutation,
+  ListDocument,
+} from "types/graphql-schema-types";
 
 import Header from "components/Header";
 import Button from "components/Button";
-
-const LIST_QUERY = gql`
-  query list($id: ID!) {
-    list(id: $id) {
-      id
-      name
-      items {
-        id
-        description
-        position
-        complete
-      }
-    }
-  }
-`;
-
-const CREATE_LIST_ITEM_MUTATION = gql`
-  mutation createListItem($input: CreateListItemInput) {
-    createListItem(input: $input) {
-      id
-      description
-      position
-      complete
-    }
-  }
-`;
-
-const COMPLETE_LIST_ITEM_MUTATION = gql`
-  mutation completeListItem($input: CompleteListItemInput) {
-    completeListItem(input: $input) {
-      id
-      description
-      position
-      complete
-    }
-  }
-`;
-
-const REMOVE_COMPLETED_LIST_ITEMS = gql`
-  mutation removeCompletedListItems($listId: ID!) {
-    removeCompletedListItems(listId: $listId)
-  }
-`;
 
 interface Props {
   match: any;
@@ -57,45 +20,53 @@ const List = ({ match }: Props) => {
   const [newTodoText, setNewTodoText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { error, data: listData } = useQuery(LIST_QUERY, {
+  const { error, data: listData } = useListQuery({
     variables: { id: match.params.listId },
     fetchPolicy: "cache-and-network",
   });
 
-  const [createListItem] = useMutation(CREATE_LIST_ITEM_MUTATION, {
-    update: (cache, { data: { createListItem: newListItem } }) => {
+  const [createListItem] = useCreateListItemMutation({
+    update: (cache, { data: result }) => {
+      if (!result) {
+        return;
+      }
+
       const data: any = cache.readQuery({
-        query: LIST_QUERY,
+        query: ListDocument,
         variables: { id: match.params.listId },
       });
 
       cache.writeQuery({
-        query: LIST_QUERY,
+        query: ListDocument,
         data: produce(data, (draft: any) => {
-          draft.list.items.push(newListItem);
+          draft.list.items.push(result?.createListItem);
         }),
       });
     },
     optimisticResponse: {
       createListItem: {
-        __typename: "ListItem",
         id: "-1",
         description: newTodoText,
+        position: 0,
+        complete: false,
       },
     },
   });
 
-  const [completeListItem] = useMutation(COMPLETE_LIST_ITEM_MUTATION);
+  const [completeListItem] = useCompleteListItemMutation();
 
-  const [removeCompletedListItems] = useMutation(REMOVE_COMPLETED_LIST_ITEMS, {
-    update: (cache, { data: { removeCompletedListItems } }) => {
+  const [removeCompletedListItems] = useRemoveCompletedListItemsMutation({
+    update: (cache, { data: result }) => {
+      if (!result) {
+        return;
+      }
       const data: any = cache.readQuery({
-        query: LIST_QUERY,
+        query: ListDocument,
         variables: { id: match.params.listId },
       });
 
       cache.writeQuery({
-        query: LIST_QUERY,
+        query: ListDocument,
         data: produce(data, (draft: any) => {
           draft.list.items = data.list.items.filter(
             (item: any) => !item.complete

@@ -1,0 +1,3 @@
+mutation removeCompletedListItems($listId: ID!) {
+  removeCompletedListItems(listId: $listId)
+}

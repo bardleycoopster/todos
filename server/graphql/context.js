@@ -15,7 +15,10 @@ module.exports = ({ req }) => {
         if (err.name === "TokenExpiredError") {
           throw new ApolloError("JWT expired", "BAD_REQUEST");
         } else {
-          throw new ApolloError("Invalid JWT", "BAD_REQUEST");
+          throw new ApolloError(
+            req.headers.authorization + "Invalid JWT",
+            "BAD_REQUEST"
+          );
         }
       }
 
