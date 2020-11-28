@@ -7,6 +7,7 @@ import {
   useCompleteListItemMutation,
   useRemoveCompletedListItemsMutation,
   ListDocument,
+  ListQuery,
 } from "types/graphql-schema-types";
 
 import Header from "components/Header";
@@ -14,7 +15,9 @@ import Button from "components/Button";
 import PageContent from "components/PageContent";
 
 interface Props {
-  match: any;
+  match: {
+    params: { listId: string };
+  };
 }
 
 const List = ({ match }: Props) => {
@@ -32,14 +35,18 @@ const List = ({ match }: Props) => {
         return;
       }
 
-      const data: any = cache.readQuery({
+      const data = cache.readQuery<ListQuery>({
         query: ListDocument,
         variables: { id: match.params.listId },
       });
 
+      if (!data) {
+        return;
+      }
+
       cache.writeQuery({
         query: ListDocument,
-        data: produce(data, (draft: any) => {
+        data: produce(data, (draft) => {
           draft.list.items.push(result?.createListItem);
         }),
       });
@@ -57,21 +64,24 @@ const List = ({ match }: Props) => {
   const [completeListItem] = useCompleteListItemMutation();
 
   const [removeCompletedListItems] = useRemoveCompletedListItemsMutation({
-    update: (cache, { data: result }) => {
-      if (!result) {
+    update: (cache, { data }) => {
+      if (!data?.removeCompletedListItems) {
         return;
       }
-      const data: any = cache.readQuery({
+
+      const result = cache.readQuery<ListQuery>({
         query: ListDocument,
         variables: { id: match.params.listId },
       });
 
+      if (!result) {
+        return;
+      }
+
       cache.writeQuery({
         query: ListDocument,
-        data: produce(data, (draft: any) => {
-          draft.list.items = data.list.items.filter(
-            (item: any) => !item.complete
-          );
+        data: produce(result, (draft) => {
+          draft.list.items = draft.list.items.filter((item) => !item.complete);
         }),
       });
     },
@@ -111,12 +121,12 @@ const List = ({ match }: Props) => {
   }
 
   const incompletedItems = list.items
-    .filter((item: any) => !item.complete)
-    .sort((a: any, b: any) => a.position - b.position);
+    .filter((item) => !item.complete)
+    .sort((a, b) => a.position - b.position);
 
   const completedItems = list.items
-    .filter((item: any) => item.complete)
-    .sort((a: any, b: any) => a.position - b.position);
+    .filter((item) => item.complete)
+    .sort((a, b) => a.position - b.position);
 
   return (
     <div className="h-screen">
@@ -126,7 +136,7 @@ const List = ({ match }: Props) => {
           Todo: {listData?.list.name}
         </h2>
         <ul>
-          {incompletedItems.map((item: any) => (
+          {incompletedItems.map((item) => (
             <li
               className="cursor-pointer py-2 px-2 -mx-4 bg-gradient-to-r hover:from-purple-400 hover:to-pink-500 flex items-center"
               key={item.id}
@@ -151,7 +161,7 @@ const List = ({ match }: Props) => {
 
         <h2 className="text-lg font-semibold py-4">Completed Todos</h2>
         <ul>
-          {completedItems.map((item: any) => (
+          {completedItems.map((item) => (
             <li
               className="cursor-pointer py-2 px-2 -mx-4 text-gray-400 bg-gradient-to-r hover:from-gray-800 hover:to-gray-700 line-through flex items-center"
               key={item.id}

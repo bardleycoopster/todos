@@ -4,6 +4,18 @@ const crypto = require("../utils/crypto");
 const db = require("../db");
 const config = require("../config.json");
 
+const convertDbRowToUser = (row) => {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    id: row.id,
+    username: row.username,
+    email: row.email,
+  };
+};
+
 const convertDbRowToList = (row) => {
   if (!row) {
     return row;
@@ -40,20 +52,18 @@ const convertDbRowToListItem = (row) => {
 const getUser = async (userId) => {
   let result;
   try {
-    result = await db.query("select * from users where id = $1;", [userId]);
+    result = await db.query("select * from users where id = $1 limit 1;", [
+      userId,
+    ]);
   } catch (e) {
-    throw new ApolloError("Invalid user query", "BAD_REQUEST");
+    throw new ApolloError("Invalid user query", "BAD_REQUEST", { error: e });
   }
 
   if (result.rowCount === 0) {
     throw new ApolloError("User not found", "BAD_REQUEST");
   }
 
-  return {
-    id: userId,
-    username: result.rows[0].username,
-    email: result.rows[0].email,
-  };
+  return convertDbRowToUser(result.rows[0]);
 };
 
 const getList = async (listId, userId) => {
@@ -71,7 +81,7 @@ const getList = async (listId, userId) => {
       [listId, userId]
     );
   } catch (e) {
-    throw new ApolloError("DB query failed", "BAD_REQUEST");
+    throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });
   }
 
   if (result.rowCount === 0) {
@@ -88,7 +98,7 @@ const getLists = async (userId) => {
       `select 
             l.*, 
             coalesce(sl.owner_id, l.user_id) as owner_id,
-            sl.owner_id is not null as is_shared 
+            coalesce(sl.owner_id != $1, false) as is_shared 
           from lists l
           left join shared_lists sl 
               on sl.owner_id = l.user_id
@@ -96,7 +106,7 @@ const getLists = async (userId) => {
       [userId]
     );
   } catch (e) {
-    throw new ApolloError("DB query failed", "BAD_REQUEST");
+    throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });
   }
 
   return result.rows.map(convertDbRowToList);
@@ -110,7 +120,7 @@ const getListItems = async (listId) => {
       [listId]
     );
   } catch (e) {
-    throw new ApolloError("DB query failed", "BAD_REQUEST");
+    throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });
   }
 
   return result.rows.map(convertDbRowToListItem);
@@ -128,6 +138,21 @@ module.exports = {
     list: async (_, { id }, { user }) => {
       return getList(id, user.id);
     },
+    shareListsUsers: async (parent, args, { user }) => {
+      try {
+        const result = await db.query(
+          `select u.* from shared_lists sl 
+          inner join users u 
+            on u.id = sl.guest_id 
+          where sl.owner_id = $1;`,
+          [user.id]
+        );
+
+        return result.rows.map(convertDbRowToUser);
+      } catch (e) {
+        throw new ApolloError("Invalid DB query", "BAD_REQUEST", { error: e });
+      }
+    },
   },
   Mutation: {
     login: async (_, { input: { username, password } }) => {
@@ -142,7 +167,9 @@ module.exports = {
           [username]
         );
       } catch (e) {
-        throw new ApolloError("Invalid user query", "BAD_REQUEST");
+        throw new ApolloError("Invalid user query", "BAD_REQUEST", {
+          error: e,
+        });
       }
 
       if (result.rows.length !== 1) {
@@ -155,7 +182,9 @@ module.exports = {
       try {
         isVerified = await crypto.verify(password, user.password);
       } catch (e) {
-        throw new ApolloError("Error validating password", "BAD_REQUEST");
+        throw new ApolloError("Error validating password", "BAD_REQUEST", {
+          error: e,
+        });
       }
 
       if (!isVerified) {
@@ -187,7 +216,9 @@ module.exports = {
           [username]
         );
       } catch (e) {
-        throw new ApolloError("Invalid user query", "BAD_REQUEST");
+        throw new ApolloError("Invalid user query", "BAD_REQUEST", {
+          error: e,
+        });
       }
 
       // user already exists
@@ -199,7 +230,7 @@ module.exports = {
       try {
         key = await crypto.kdf(password);
       } catch (e) {
-        throw new ApolloError("Invalid password", "BAD_REQUEST");
+        throw new ApolloError("Invalid password", "BAD_REQUEST", { error: e });
       }
 
       try {
@@ -208,7 +239,9 @@ module.exports = {
           [username.toLowerCase(), key, email.toLowerCase()]
         );
       } catch (e) {
-        throw new ApolloError("Unable to add user", "BAD_REQUEST");
+        throw new ApolloError("Unable to add user", "BAD_REQUEST", {
+          error: e,
+        });
       }
 
       const token = jwt.sign(
@@ -229,7 +262,7 @@ module.exports = {
           [user.id, name]
         );
       } catch (e) {
-        throw new ApolloError("DB query failed", "BAD_REQUEST");
+        throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });
       }
 
       return convertDbRowToList(result.rows[0]);
@@ -245,20 +278,24 @@ module.exports = {
           [user.id, id]
         );
       } catch (e) {
-        throw new ApolloError("DB query failed", "BAD_REQUEST");
+        throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });
       }
 
-      return result.rowCount === 1;
+      if (result.rowCount !== 1) {
+        throw new ApolloError("Could not find list to delete.", "BAD_REQUEST");
+      }
+
+      return id;
     },
     shareLists: async (parent, { input: { username, email } }, { user }) => {
       let userResult;
       try {
         userResult = await db.query(
-          "select id from users where username=$1 or email=$2 limit 1;",
+          "select id, username from users where username=$1 or email=$2 limit 1;",
           [username, email]
         );
       } catch (e) {
-        throw new ApolloError("DB query failed", "BAD_REQUEST");
+        throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });
       }
 
       if (userResult.rowCount !== 1) {
@@ -280,10 +317,37 @@ module.exports = {
           [user.id, guestId]
         );
       } catch (e) {
-        throw new ApolloError("DB query failed", "BAD_REQUEST");
+        throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });
       }
 
-      return result.rowCount === 1;
+      if (result.rowCount === 0) {
+        throw new ApolloError(
+          "Lists already shared with this user",
+          "BAD_REQUEST"
+        );
+      }
+
+      return convertDbRowToUser(userResult.rows[0]);
+    },
+    unshareLists: async (_, { id }, { user }) => {
+      let result;
+      try {
+        result = await db.query(
+          "delete from shared_lists where owner_id = $1 and guest_id = $2;",
+          [user.id, id]
+        );
+      } catch (e) {
+        throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });
+      }
+
+      if (result.rowCount !== 1) {
+        throw new ApolloError(
+          "Lists not shared with this user.",
+          "BAD_REQUEST"
+        );
+      }
+
+      return id;
     },
     createListItem: async (
       _,
@@ -314,7 +378,7 @@ module.exports = {
           );
         }
       } catch (e) {
-        throw new ApolloError("DB query failed", "BAD_REQUEST");
+        throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });
       }
 
       return convertDbRowToListItem(result.rows[0]);
@@ -330,7 +394,7 @@ module.exports = {
           [id, complete === false ? false : true]
         );
       } catch (e) {
-        throw new ApolloError("DB query failed", "BAD_REQUEST");
+        throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });
       }
       return convertDbRowToListItem(result.rows[0]);
     },
@@ -342,7 +406,7 @@ module.exports = {
           [listId]
         );
       } catch (e) {
-        throw new ApolloError("DB query failed", "BAD_REQUEST");
+        throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });
       }
 
       return result.rowCount;

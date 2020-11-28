@@ -1,3 +1,6 @@
-mutation shareLists($input: ShareListsInput) {
-  shareLists(input: $input)
+mutation shareLists($input: ShareListsInput!) {
+  shareLists(input: $input) {
+    id
+    username
+  }
 }

@@ -2,5 +2,9 @@ query Lists {
   lists {
     id
     name
+    shared
+    owner {
+      username
+    }
   }
 }

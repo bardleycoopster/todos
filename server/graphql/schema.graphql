@@ -80,6 +80,7 @@ type Query {
   user: User
   lists: [List!]!
   list(id: ID!): List!
+  shareListsUsers: [User!]!
 }
 
 type Mutation {
@@ -88,8 +89,9 @@ type Mutation {
 
   createList(input: CreateListInput): List!
   updateList(input: UpdateListInput): List!
-  deleteList(id: ID!): Boolean!
-  shareLists(input: ShareListsInput): Boolean!
+  deleteList(id: ID!): ID!
+  shareLists(input: ShareListsInput!): User!
+  unshareLists(id: ID!): ID!
 
   createListItem(input: CreateListItemInput): ListItem!
   updateListItem(input: UpdateListItemInput): ListItem!

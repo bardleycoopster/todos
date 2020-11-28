@@ -4,7 +4,9 @@ import produce from "immer";
 import {
   useCreateListMutation,
   useListsQuery,
-  ListDocument,
+  ListsQuery,
+  ListsDocument,
+  List,
 } from "types/graphql-schema-types";
 
 import Header from "components/Header";
@@ -24,14 +26,18 @@ const Lists = () => {
         return;
       }
 
-      const result = cache.readQuery({
-        query: ListDocument,
+      const result = cache.readQuery<ListsQuery>({
+        query: ListsDocument,
       });
 
+      if (!result) {
+        return;
+      }
+
       cache.writeQuery({
-        query: ListDocument,
-        data: produce(result, (draft: any) => {
-          draft.lists.push(data.createList);
+        query: ListsDocument,
+        data: produce(result, (draft) => {
+          draft.lists.push(data.createList as List);
         }),
       });
     },
@@ -61,10 +67,13 @@ const Lists = () => {
         <h1 className="text-4xl text-center mt-4">Lists</h1>
 
         <ul>
-          {data?.lists.map((list: any) => (
+          {data?.lists.map((list) => (
             <Link key={list.id} to={`/lists/${list.id}`}>
-              <li className="py-5 px-3 text-xl w-full font-semibold border-b-2 border-gray-500">
-                {list.name}
+              <li className="py-5 px-3 text-xl w-full font-semibold border-b-2 border-gray-500 flex justify-between items-center">
+                <span>{list.name}</span>
+                <span className="text-sm text-gray-400">
+                  {list.shared && list.owner.username}
+                </span>
               </li>
             </Link>
           ))}
@@ -86,6 +95,7 @@ const Lists = () => {
             Add new List
           </Button>
         </div>
+        <Link to="/lists/share">Share Lists</Link>
       </PageContent>
     </div>
   );

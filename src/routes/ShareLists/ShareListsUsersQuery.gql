@@ -1,0 +1,6 @@
+query shareListsUsers {
+  shareListsUsers {
+    id
+    username
+  }
+}

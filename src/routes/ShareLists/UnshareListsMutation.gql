@@ -1,0 +1,3 @@
+mutation unshareLists($id: ID!) {
+  unshareLists(id: $id)
+}

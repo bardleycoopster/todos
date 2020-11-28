@@ -1,25 +1,105 @@
 import React, { useState } from "react";
+import produce from "immer";
 import Header from "components/Header";
 import PageContent from "components/PageContent";
+import Notification from "components/Notification";
+import Button from "components/Button";
 
-import { useShareListsMutation } from "types/graphql-schema-types";
+import {
+  useShareListsMutation,
+  useUnshareListsMutation,
+  useShareListsUsersQuery,
+  ShareListsUsersDocument,
+  ShareListsUsersQuery,
+} from "types/graphql-schema-types";
 
 const ShareLists = () => {
   const [val, setVal] = useState("");
-  const [shareLists] = useShareListsMutation();
-  const onSubmit = (e: React.FormEvent) => {
+  const [error, setError] = useState<string | null>(null);
+
+  const { data } = useShareListsUsersQuery({
+    fetchPolicy: "cache-and-network",
+  });
+
+  const [shareLists] = useShareListsMutation({
+    variables: { input: { username: val, email: val } },
+    onError: (e) => {
+      setError(e.message);
+    },
+    update: (cache, { data }) => {
+      if (!data?.shareLists) {
+        return;
+      }
+
+      const result = cache.readQuery<ShareListsUsersQuery>({
+        query: ShareListsUsersDocument,
+      });
+
+      if (!result) {
+        return;
+      }
+
+      cache.writeQuery({
+        query: ShareListsUsersDocument,
+        data: produce(result, (draft) => {
+          draft.shareListsUsers.push(data.shareLists);
+        }),
+      });
+    },
+  });
+
+  const [unshareLists] = useUnshareListsMutation({
+    onError: (e) => {
+      setError(e.message);
+    },
+    update: (cache, { data }) => {
+      if (!data?.unshareLists) {
+        return;
+      }
+
+      const result = cache.readQuery<ShareListsUsersQuery>({
+        query: ShareListsUsersDocument,
+      });
+
+      if (!result) {
+        return;
+      }
+
+      cache.writeQuery({
+        query: ShareListsUsersDocument,
+        data: produce(result, (draft) => {
+          draft.shareListsUsers = draft.shareListsUsers.filter(
+            (user) => user.id !== data.unshareLists
+          );
+        }),
+      });
+    },
+  });
+
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    shareLists({
-      variables: { input: { username: val, email: val } },
-    });
+    shareLists();
   };
 
   return (
     <div>
       <Header />
       <PageContent>
-        Enter username or email of the person you want to share with.
+        <h2 className="mt-5 text-center text-4xl">Share Lists</h2>
+        {data?.shareListsUsers.map((user) => (
+          <div key={user.id}>
+            {user.username}
+            <button
+              onClick={() => unshareLists({ variables: { id: user.id } })}
+            >
+              Delete
+            </button>
+          </div>
+        ))}
+        <p className="my-5">
+          Enter username or email of the person you want to share with.
+        </p>
         <form onSubmit={onSubmit}>
           <input
             className="text-black"
@@ -27,7 +107,10 @@ const ShareLists = () => {
             value={val}
             onChange={(e) => setVal(e.target.value)}
           />
-          <input type="submit" value="SHARE" />
+          <Button disabled={!val} type="submit">
+            SHARE
+          </Button>
+          <Notification error={error} />
         </form>
       </PageContent>
     </div>

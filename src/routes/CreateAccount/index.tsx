@@ -4,6 +4,7 @@ import { useHistory } from "react-router-dom";
 import { Link, Redirect } from "react-router-dom";
 import Header from "components/Header";
 import PageContent from "components/PageContent";
+import Notification from "components/Notification";
 
 const CreateAccount = () => {
   const [username, setUsername] = useState("");
@@ -11,7 +12,7 @@ const CreateAccount = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [createAccount] = useCreateAccountMutation();
-  const history = useHistory<any>();
+  const history = useHistory<IHistoryState>();
 
   const token = localStorage.getItem("token");
   if (token) {
@@ -100,11 +101,7 @@ const CreateAccount = () => {
           </div>
         </form>
       </PageContent>
-      {error && (
-        <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 max-w-lg min-w-lg mx-auto py-2 px-8  border-red-700 rounded-sm bg-gradient-to-br from-red-600 to-red-800">
-          {error}
-        </div>
-      )}
+      <Notification error={error} />
     </div>
   );
 };
