@@ -116,7 +116,9 @@ const getListItems = async (listId) => {
   let result;
   try {
     result = await db.query(
-      "select * from list_items where list_id = $1 order by position;",
+      `select * from list_items
+      where list_id = $1
+      order by position;`,
       [listId]
     );
   } catch (e) {
@@ -141,7 +143,8 @@ module.exports = {
     shareListsUsers: async (parent, args, { user }) => {
       try {
         const result = await db.query(
-          `select u.* from shared_lists sl 
+          `select u.* 
+          from shared_lists sl 
           inner join users u 
             on u.id = sl.guest_id 
           where sl.owner_id = $1;`,
@@ -163,7 +166,9 @@ module.exports = {
       let result;
       try {
         result = await db.query(
-          `select id, username, password from users where username = $1 limit 1;`,
+          `select id, username, password 
+          from users 
+          where username = $1 limit 1;`,
           [username]
         );
       } catch (e) {
@@ -212,7 +217,9 @@ module.exports = {
       let result;
       try {
         result = await db.query(
-          `select id, username, password from users where username = $1 limit 1;`,
+          `select id, username, password 
+          from users
+           where username = $1 limit 1;`,
           [username]
         );
       } catch (e) {
@@ -235,7 +242,10 @@ module.exports = {
 
       try {
         result = await db.query(
-          `insert into users (username, password, email) values ($1, $2, $3) returning *;`,
+          `insert into 
+          users (username, password, email) 
+          values ($1, $2, $3) 
+          returning *;`,
           [username.toLowerCase(), key, email.toLowerCase()]
         );
       } catch (e) {
@@ -258,7 +268,11 @@ module.exports = {
       let result;
       try {
         result = await db.query(
-          "insert into lists (user_id, name) values ($1, $2) returning *;",
+          `insert into lists
+          (user_id, name)
+          values
+          ($1, $2)
+          returning *;`,
           [user.id, name]
         );
       } catch (e) {
@@ -274,7 +288,8 @@ module.exports = {
       let result;
       try {
         result = await db.query(
-          "delete from lists where user_id = $1 and id = $2",
+          `delete from lists
+          where user_id = $1 and id = $2`,
           [user.id, id]
         );
       } catch (e) {
@@ -291,7 +306,10 @@ module.exports = {
       let userResult;
       try {
         userResult = await db.query(
-          "select id, username from users where username=$1 or email=$2 limit 1;",
+          `select id, username
+          from users
+          where username=$1 or email=$2
+          limit 1;`,
           [username, email]
         );
       } catch (e) {
@@ -311,7 +329,8 @@ module.exports = {
       let result;
       try {
         result = await db.query(
-          `insert into shared_lists (owner_id, guest_id) 
+          `insert into shared_lists 
+          (owner_id, guest_id) 
            values ($1, $2)
            on conflict(owner_id, guest_id) do nothing;`,
           [user.id, guestId]
@@ -333,7 +352,8 @@ module.exports = {
       let result;
       try {
         result = await db.query(
-          "delete from shared_lists where owner_id = $1 and guest_id = $2;",
+          `delete from shared_lists 
+          where owner_id = $1 and guest_id = $2;`,
           [user.id, id]
         );
       } catch (e) {
@@ -359,7 +379,9 @@ module.exports = {
         if (position != null) {
           result = await db.transaction(async (query) => {
             await query(
-              "update list_items set position = position + 1 where position >= $2 and list_id = $1;",
+              `update list_items
+              set position = position + 1
+              where position >= $2 and list_id = $1;`,
               [listId, position]
             );
             const innerResult = await query(
@@ -372,10 +394,18 @@ module.exports = {
             return innerResult;
           });
         } else {
-          result = await db.query(
-            "insert into list_items (list_id, description, last_user_id) values ($1, $2, $3) returning *;",
-            [listId, description, user.id]
-          );
+          const list = getList(listId, user.id);
+
+          if (list) {
+            result = await db.query(
+              `insert into list_items
+              (list_id, description, last_user_id)
+              values
+              ($1, $2, $3)
+              returning *;`,
+              [listId, description, user.id]
+            );
+          }
         }
       } catch (e) {
         throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });
@@ -386,12 +416,20 @@ module.exports = {
     updateListItem: async (parent, { input: { description, position } }) => {
       throw new ApolloError("Not Implemented", "NOT_IMPLEMENTED");
     },
-    completeListItem: async (parent, { input: { id, complete } }) => {
+    completeListItem: async (parent, { input: { id, complete } }, { user }) => {
       let result;
       try {
         result = await db.query(
-          "update list_items set complete = $2 where id = $1 returning *;",
-          [id, complete === false ? false : true]
+          `update list_items li
+          set complete = $2
+          from lists l, shared_lists sl
+          where 
+              li.id = $1
+              and l.id = li.list_id 
+              and sl.owner_id = l.user_id
+              and (l.user_id = $3 or sl.guest_id = $3)
+          returning li.*;`,
+          [id, complete, user.id]
         );
       } catch (e) {
         throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });

@@ -68,9 +68,9 @@ const ShareLists = () => {
       cache.writeQuery({
         query: ShareListsUsersDocument,
         data: produce(result, (draft) => {
-          draft.shareListsUsers = draft.shareListsUsers.filter(
-            (user) => user.id !== data.unshareLists
-          );
+          draft.shareListsUsers = draft.shareListsUsers.filter((user) => {
+            return user.id !== data.unshareLists;
+          });
         }),
       });
     },

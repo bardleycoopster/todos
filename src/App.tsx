@@ -1,10 +1,12 @@
 import React from "react";
-import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
+import { Router, Switch, Route } from "react-router-dom";
 import {
   ApolloClient,
   ApolloProvider,
   NormalizedCacheObject,
 } from "@apollo/client";
+
+import browserHistory from "./browserHistory";
 
 import Home from "routes/Home";
 import Lists from "routes/Lists";
@@ -23,7 +25,7 @@ interface Props {
 function App({ apolloClient }: Props) {
   return (
     <ApolloProvider client={apolloClient}>
-      <Router>
+      <Router history={browserHistory}>
         <Switch>
           <Route exact path="/" component={Home} />
           <Route exact path="/lists" component={Lists} />

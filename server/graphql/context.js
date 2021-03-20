@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const { ApolloError } = require("apollo-server-express");
+const { AuthenticationError } = require("apollo-server-express");
 const config = require("../config");
 
 module.exports = ({ req }) => {
@@ -13,11 +13,10 @@ module.exports = ({ req }) => {
     jwt.verify(token, config.jwt.secret, (err, decoded) => {
       if (err) {
         if (err.name === "TokenExpiredError") {
-          throw new ApolloError("JWT expired", "BAD_REQUEST");
+          throw new AuthenticationError("JWT expired");
         } else {
-          throw new ApolloError(
-            req.headers.authorization + "Invalid JWT",
-            "BAD_REQUEST"
+          throw new AuthenticationError(
+            req.headers.authorization + "Invalid JWT"
           );
         }
       }

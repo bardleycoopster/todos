@@ -6,17 +6,32 @@ import {
   HttpLink,
   ApolloLink,
   InMemoryCache,
-  concat,
 } from "@apollo/client";
+import { onError } from "apollo-link-error";
 import { CachePersistor } from "apollo3-cache-persist";
+import browserHistory from "./browserHistory";
 import * as serviceWorkerRegistration from "./serviceWorkerRegistration";
 
 const SCHEMA_VERSION = "1";
 const SCHEMA_VERSION_KEY = "apollo-schema-version";
 
 async function main() {
-  const cache = new InMemoryCache();
+  const cache = new InMemoryCache({
+    typePolicies: {
+      Query: {
+        fields: {
+          shareListsUsers: {
+            merge(existing, incoming) {
+              return incoming;
+            },
+          },
+        },
+      },
+    },
+  });
+
   const httpLink = new HttpLink({ uri: "/graphql" });
+
   const authMiddleware = new ApolloLink((operation, forward) => {
     const token = localStorage.getItem("token");
 
@@ -28,6 +43,21 @@ async function main() {
     });
 
     return forward(operation);
+  });
+
+  const errorLink = onError(({ graphQLErrors, networkError }) => {
+    if (graphQLErrors) {
+      graphQLErrors.forEach((error) => {
+        if (error.extensions?.code === "UNAUTHENTICATED") {
+          localStorage.removeItem("token");
+          browserHistory.replace({
+            pathname: "login",
+            state: { referrer: window.location.pathname },
+          });
+        }
+      });
+    }
+    // if (networkError) console.log(`[Network error]: ${networkError}`);
   });
 
   const persistor = new CachePersistor({
@@ -46,7 +76,11 @@ async function main() {
 
   const client = new ApolloClient({
     cache: cache,
-    link: concat(authMiddleware, httpLink),
+    link: ApolloLink.from([
+      authMiddleware,
+      (errorLink as unknown) as ApolloLink,
+      httpLink,
+    ]),
   });
 
   ReactDOM.render(
