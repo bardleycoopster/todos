@@ -2,13 +2,17 @@ const jwt = require("jsonwebtoken");
 const { AuthenticationError } = require("apollo-server-express");
 const config = require("../config");
 
+const EXEMPT_OPERATIONS = ["login"];
+
 module.exports = ({ req }) => {
   let user;
   let token =
     req.headers.authorization &&
     req.headers.authorization.replace("Bearer ", "");
 
-  if (token) {
+  const isOperationExempt = EXEMPT_OPERATIONS.includes(req.body.operationName);
+
+  if (token && !isOperationExempt) {
     // verifies secret and checks exp
     jwt.verify(token, config.jwt.secret, (err, decoded) => {
       if (err) {

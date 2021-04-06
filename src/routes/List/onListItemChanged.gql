@@ -1,0 +1,8 @@
+subscription onListItemChanged($listId: ID!) {
+  listItemChanged(listId: $listId) {
+    id
+    description
+    position
+    complete
+  }
+}

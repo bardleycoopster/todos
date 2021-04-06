@@ -1,8 +1,11 @@
-const { ApolloError } = require("apollo-server-express");
+const { ApolloError, PubSub, withFilter } = require("apollo-server-express");
 const jwt = require("jsonwebtoken");
 const crypto = require("../utils/crypto");
 const db = require("../db");
 const config = require("../config.json");
+
+const pubsub = new PubSub();
+const LIST_ITEM_CHANGED = "LIST_ITEM_CHANGED";
 
 const convertDbRowToUser = (row) => {
   if (!row) {
@@ -37,9 +40,8 @@ const convertDbRowToListItem = (row) => {
   }
 
   return {
-    id: row.id,
-    listId: row.list_id,
-    name: row.name,
+    id: row.id.toString(),
+    listId: row.list_id.toString(),
     description: row.description,
     complete: row.complete,
     position: row.position,
@@ -375,6 +377,11 @@ module.exports = {
       { user }
     ) => {
       let result;
+
+      if (description.length === 0) {
+        throw new ApolloError("description must not be empty", "BAD_REQUEST");
+      }
+
       try {
         if (position != null) {
           result = await db.transaction(async (query) => {
@@ -411,7 +418,13 @@ module.exports = {
         throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });
       }
 
-      return convertDbRowToListItem(result.rows[0]);
+      const listItem = convertDbRowToListItem(result.rows[0]);
+
+      pubsub.publish(LIST_ITEM_CHANGED, {
+        listItemChanged: listItem,
+      });
+
+      return listItem;
     },
     updateListItem: async (parent, { input: { description, position } }) => {
       throw new ApolloError("Not Implemented", "NOT_IMPLEMENTED");
@@ -434,7 +447,12 @@ module.exports = {
       } catch (e) {
         throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });
       }
-      return convertDbRowToListItem(result.rows[0]);
+
+      const listItem = convertDbRowToListItem(result.rows[0]);
+      pubsub.publish(LIST_ITEM_CHANGED, {
+        listItemChanged: listItem,
+      });
+      return listItem;
     },
     removeCompletedListItems: async (parent, { listId }) => {
       let result;
@@ -448,6 +466,21 @@ module.exports = {
       }
 
       return result.rowCount;
+    },
+  },
+  Subscription: {
+    listItemChanged: {
+      subscribe: withFilter(
+        () => pubsub.asyncIterator(LIST_ITEM_CHANGED),
+        ({ listItemChanged: listItem }, variables) => {
+          console.log(
+            listItem,
+            variables,
+            listItem.listId === variables.listId
+          );
+          return listItem.listId === variables.listId;
+        }
+      ),
     },
   },
   User: {

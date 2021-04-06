@@ -98,3 +98,7 @@ type Mutation {
   completeListItem(input: CompleteListItemInput): ListItem!
   removeCompletedListItems(listId: ID!): Int!
 }
+
+type Subscription {
+  listItemChanged(listId: ID!): ListItem
+}

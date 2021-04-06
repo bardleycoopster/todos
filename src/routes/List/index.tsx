@@ -6,6 +6,7 @@ import {
   useCreateListItemMutation,
   useCompleteListItemMutation,
   useRemoveCompletedListItemsMutation,
+  useOnListItemChangedSubscription,
   ListDocument,
   ListQuery,
 } from "types/graphql-schema-types";
@@ -29,6 +30,42 @@ const List = ({ match }: Props) => {
     fetchPolicy: "cache-and-network",
   });
 
+  const { error: subscriptionError } = useOnListItemChangedSubscription({
+    variables: { listId: match.params.listId },
+    onSubscriptionData: ({ client, subscriptionData: { data } }) => {
+      if (data) {
+        const { listItemChanged: listItem } = data;
+
+        if (!listItem) {
+          return;
+        }
+
+        const list = client.readQuery<ListQuery>({
+          query: ListDocument,
+          variables: { id: match.params.listId },
+        });
+
+        if (!list) {
+          return;
+        }
+
+        client.writeQuery({
+          query: ListDocument,
+          data: produce(list, (draft) => {
+            const item = draft.list.items.find(
+              (item) => item.id === listItem.id
+            );
+            if (item) {
+              item.complete = listItem.complete;
+            } else {
+              draft.list.items.push(listItem);
+            }
+          }),
+        });
+      }
+    },
+  });
+
   const [createListItem] = useCreateListItemMutation({
     update: (cache, { data: result }) => {
       if (!result) {
@@ -40,7 +77,10 @@ const List = ({ match }: Props) => {
         variables: { id: match.params.listId },
       });
 
-      if (!data) {
+      if (
+        !data ||
+        data.list.items.find((item) => item.id === result?.createListItem.id)
+      ) {
         return;
       }
 
@@ -114,6 +154,10 @@ const List = ({ match }: Props) => {
 
   if (error) {
     return <div>{JSON.stringify(error)}</div>;
+  }
+
+  if (subscriptionError) {
+    return <div>{JSON.stringify(subscriptionError)}</div>;
   }
 
   if (!list) {

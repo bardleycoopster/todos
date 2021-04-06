@@ -20,13 +20,9 @@ const Lists = () => {
   const { data, error } = useListsQuery({
     fetchPolicy: "cache-and-network",
     onError: (error) => {
-      console.log("error", error);
-      // console.log(JSON.stringify(error, null, " "));
-      // console.log();
       // const unauthenticated = error?.networkError?.result.errors.some((err) => {
       //   return err.extensions.code === "UNAUTHENTICATED";
       // });
-      // console.log(unauthenticated);
     },
   });
 

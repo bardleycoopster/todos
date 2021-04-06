@@ -6,9 +6,13 @@ import {
   HttpLink,
   ApolloLink,
   InMemoryCache,
+  split,
 } from "@apollo/client";
+import { getMainDefinition } from "@apollo/client/utilities";
+import { WebSocketLink } from "@apollo/client/link/ws";
 import { onError } from "apollo-link-error";
 import { CachePersistor } from "apollo3-cache-persist";
+
 import browserHistory from "./browserHistory";
 import * as serviceWorkerRegistration from "./serviceWorkerRegistration";
 
@@ -30,11 +34,38 @@ async function main() {
     },
   });
 
+  const host =
+    process.env.NODE_ENV === "production"
+      ? window.location.host
+      : "localhost:8000";
+
+  const token = localStorage.getItem("token");
+
+  const wsLink = new WebSocketLink({
+    uri: `ws://${host}/subscriptions`,
+    options: {
+      reconnect: true,
+      connectionParams: {
+        authorization: token ? `Bearer ${token}` : "",
+      },
+    },
+  });
+
   const httpLink = new HttpLink({ uri: "/graphql" });
 
-  const authMiddleware = new ApolloLink((operation, forward) => {
-    const token = localStorage.getItem("token");
+  const splitLink = split(
+    ({ query }) => {
+      const definition = getMainDefinition(query);
+      return (
+        definition.kind === "OperationDefinition" &&
+        definition.operation === "subscription"
+      );
+    },
+    wsLink,
+    httpLink
+  );
 
+  const authMiddleware = new ApolloLink((operation, forward) => {
     // add the authorization to the headers
     operation.setContext({
       headers: {
@@ -79,7 +110,7 @@ async function main() {
     link: ApolloLink.from([
       authMiddleware,
       (errorLink as unknown) as ApolloLink,
-      httpLink,
+      splitLink,
     ]),
   });
 

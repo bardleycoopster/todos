@@ -30,21 +30,16 @@ async function transaction(callback) {
 
   let result;
   try {
-    console.log("begin");
     await client.query("begin;");
-    console.log("start callback");
     result = await callback(client.query);
-    console.log("commit");
     await client.query("commit;");
   } catch (e) {
     await client.query("rollback");
     throw new Error({ message: "DB transaction query failed" });
   } finally {
-    console.log("release");
     client.release();
   }
 
-  console.log("return result");
   return result;
 }
 
