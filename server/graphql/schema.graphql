@@ -100,5 +100,6 @@ type Mutation {
 }
 
 type Subscription {
-  listItemChanged(listId: ID!): ListItem
+  listItemChanged(listId: ID!): ListItem!
+  completedListItemsRemoved(listId: ID!): Boolean!
 }

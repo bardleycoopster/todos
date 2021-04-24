@@ -6,6 +6,7 @@ const config = require("../config.json");
 
 const pubsub = new PubSub();
 const LIST_ITEM_CHANGED = "LIST_ITEM_CHANGED";
+const COMPLETED_LIST_ITEMS_REMOVED = "COMPLETED_LIST_ITEMS_REMOVED";
 
 const convertDbRowToUser = (row) => {
   if (!row) {
@@ -452,6 +453,7 @@ module.exports = {
       pubsub.publish(LIST_ITEM_CHANGED, {
         listItemChanged: listItem,
       });
+
       return listItem;
     },
     removeCompletedListItems: async (parent, { listId }) => {
@@ -464,6 +466,10 @@ module.exports = {
       } catch (e) {
         throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });
       }
+      pubsub.publish(COMPLETED_LIST_ITEMS_REMOVED, {
+        completedListItemsRemoved: true,
+        listId,
+      });
 
       return result.rowCount;
     },
@@ -473,12 +479,15 @@ module.exports = {
       subscribe: withFilter(
         () => pubsub.asyncIterator(LIST_ITEM_CHANGED),
         ({ listItemChanged: listItem }, variables) => {
-          console.log(
-            listItem,
-            variables,
-            listItem.listId === variables.listId
-          );
           return listItem.listId === variables.listId;
+        }
+      ),
+    },
+    completedListItemsRemoved: {
+      subscribe: withFilter(
+        () => pubsub.asyncIterator(COMPLETED_LIST_ITEMS_REMOVED),
+        ({ listId }, variables) => {
+          return listId === variables.listId;
         }
       ),
     },

@@ -78,7 +78,6 @@ async function start() {
       schema: schemaWithResolvers,
       keepAlive: 30000,
       onConnect: ({ authorization }, webSocket, context) => {
-        console.log(context);
         if (authorization) {
           let user;
           let token = authorization.replace("Bearer ", "");
