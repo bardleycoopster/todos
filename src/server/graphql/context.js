@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { AuthenticationError } = require("apollo-server-express");
-const config = require("../config");
+const config = require("../config.json");
 
 const EXEMPT_OPERATIONS = ["login"];
 

@@ -8,15 +8,15 @@ import {
 
 import browserHistory from "./browserHistory";
 
-import Home from "routes/Home";
-import Lists from "routes/Lists";
-import List from "routes/List";
-import ShareLists from "routes/ShareLists";
-import CreateAccount from "routes/CreateAccount";
-import Login from "routes/Login";
-import Profile from "routes/Profile";
+import Home from "client/routes/Home";
+import Lists from "client/routes/Lists";
+import List from "client/routes/List";
+import ShareLists from "client/routes/ShareLists";
+import CreateAccount from "client/routes/CreateAccount";
+import Login from "client/routes/Login";
+import Profile from "client/routes/Profile";
 
-import "styles/generated/tailwind.css";
+import "client/styles/generated/tailwind.css";
 
 interface Props {
   apolloClient: ApolloClient<NormalizedCacheObject>;

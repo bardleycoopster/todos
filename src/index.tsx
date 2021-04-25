@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import App from "./App";
+import App from "./client/App";
 import {
   ApolloClient,
   HttpLink,
@@ -13,8 +13,8 @@ import { WebSocketLink } from "@apollo/client/link/ws";
 import { onError } from "apollo-link-error";
 import { CachePersistor } from "apollo3-cache-persist";
 
-import browserHistory from "./browserHistory";
-import * as serviceWorkerRegistration from "./serviceWorkerRegistration";
+import browserHistory from "./client/browserHistory";
+import * as serviceWorkerRegistration from "./client/serviceWorkerRegistration";
 
 const SCHEMA_VERSION = "1";
 const SCHEMA_VERSION_KEY = "apollo-schema-version";

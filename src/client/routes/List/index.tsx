@@ -9,11 +9,11 @@ import {
   useOnListItemChangedSubscription,
   ListDocument,
   ListQuery,
-} from "types/graphql-schema-types";
+} from "client/types/graphql-schema-types";
 
-import Header from "components/Header";
-import Button from "components/Button";
-import PageContent from "components/PageContent";
+import Header from "client/components/Header";
+import Button from "client/components/Button";
+import PageContent from "client/components/PageContent";
 
 interface Props {
   match: {

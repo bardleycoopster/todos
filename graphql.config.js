@@ -1,6 +1,6 @@
 module.exports = {
-  schema: "server/graphql/schema.graphql",
-  documents: "src/**/*.{gql,graphql,js,ts,jsx,tsx}",
+  schema: "src/server/graphql/schema.graphql",
+  documents: "src/client/**/*.{gql,graphql,js,ts,jsx,tsx}",
   extensions: {
     endpoints: {
       default: {

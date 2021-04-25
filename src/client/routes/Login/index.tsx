@@ -1,17 +1,16 @@
 import React, { useState } from "react";
-import { useCreateAccountMutation } from "types/graphql-schema-types";
-import { useHistory } from "react-router-dom";
-import { Link, Redirect } from "react-router-dom";
-import Header from "components/Header";
-import PageContent from "components/PageContent";
-import Notification from "components/Notification";
+import { useHistory, Redirect } from "react-router-dom";
+import { useLoginMutation } from "client/types/graphql-schema-types";
 
-const CreateAccount = () => {
+import Header from "client/components/Header";
+import PageContent from "client/components/PageContent";
+import Notification from "client/components/Notification";
+
+const Login = () => {
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [createAccount] = useCreateAccountMutation();
+  const [login] = useLoginMutation();
   const history = useHistory<IHistoryState>();
 
   const token = localStorage.getItem("token");
@@ -22,12 +21,11 @@ const CreateAccount = () => {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const resp = await createAccount({
-        variables: { input: { username, password, email } },
+      const resp = await login({
+        variables: { input: { username, password } },
       });
-
       if (resp.data) {
-        localStorage.setItem("token", resp.data.createAccount.jwt);
+        localStorage.setItem("token", resp.data.login.jwt);
 
         if (history.location.state?.referrer) {
           history.replace(history.location.state.referrer);
@@ -37,6 +35,7 @@ const CreateAccount = () => {
       }
     } catch (e) {
       setError("An error occurred. Please try again.");
+      console.log(e);
     }
   };
 
@@ -44,9 +43,7 @@ const CreateAccount = () => {
     <div>
       <Header />
       <PageContent>
-        <h2 className="mt-10 mb-10 text-center text-3xl font-bold">
-          CREATE ACCOUNT
-        </h2>
+        <h2 className="mt-5 text-center text-4xl">Login</h2>
         <form onSubmit={onSubmit}>
           <div className="mt-5">
             <label className="block mb-1" htmlFor="username">
@@ -61,18 +58,6 @@ const CreateAccount = () => {
             />
           </div>
           <div className="mt-5">
-            <label className="block mb-1" htmlFor="email">
-              Email
-            </label>
-            <input
-              className="w-full text-black py-2 px-2 rounded-sm border-2 border-black"
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          <div className="mt-5">
             <label className="block mb-1" htmlFor="password">
               Password
             </label>
@@ -84,18 +69,12 @@ const CreateAccount = () => {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          <div className="flex items-center justify-between mt-6">
-            <Link
-              className="text-pink-500 hover:text-pink-700 font-semibold"
-              to="/login"
-            >
-              Login
-            </Link>
+          <div className="text-right mt-6">
             <input
               className="py-2 px-5 bg-gradient-to-br from-purple-400 to-pink-500  rounded-sm text-white font-semibold hover:from-purple-500 hover:to-pink-600 shadow-lg focus:outline-none"
               type="submit"
-              value="CREATE ACCOUNT"
-              disabled={!username || !password || !email}
+              value="LOGIN"
+              disabled={!username || !password}
             />
           </div>
         </form>
@@ -105,4 +84,4 @@ const CreateAccount = () => {
   );
 };
 
-export default CreateAccount;
+export default Login;

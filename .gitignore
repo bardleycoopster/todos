@@ -8,10 +8,11 @@
 # testing
 /coverage
 
-# production
+# Generated files
 /build
-src/styles/generated
-src/types/graphql-schema-types.ts
+/buildServer
+src/client/styles/generated
+src/client/types/graphql-schema-types.ts
 
 # misc
 .DS_Store

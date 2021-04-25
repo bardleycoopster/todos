@@ -1,6 +1,6 @@
 import React from "react";
-import Header from "components/Header";
-import PageContent from "components/PageContent";
+import Header from "client/components/Header";
+import PageContent from "client/components/PageContent";
 
 const Profile = () => {
   return (

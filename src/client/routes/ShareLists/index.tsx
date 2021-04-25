@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import produce from "immer";
-import Header from "components/Header";
-import PageContent from "components/PageContent";
-import Notification from "components/Notification";
-import Button from "components/Button";
+import Header from "client/components/Header";
+import PageContent from "client/components/PageContent";
+import Notification from "client/components/Notification";
+import Button from "client/components/Button";
 
 import {
   useShareListsMutation,
@@ -11,7 +11,7 @@ import {
   useShareListsUsersQuery,
   ShareListsUsersDocument,
   ShareListsUsersQuery,
-} from "types/graphql-schema-types";
+} from "client/types/graphql-schema-types";
 
 const ShareLists = () => {
   const [val, setVal] = useState("");
