@@ -15,8 +15,10 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react",
+    "types": ["@types/jest"],
     "typeRoots": ["src/types", "src/client/types"],
     "baseUrl": "src"
   },
-  "include": ["src"]
+  "include": ["src", "src/client/setupTests.js"],
+  "exlcude": ["**/*.test.tsx"]
 }
