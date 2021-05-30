@@ -1,4 +1,4 @@
-mutation completeListItem($input: CompleteListItemInput) {
+mutation completeListItem($input: CompleteListItemInput!) {
   completeListItem(input: $input) {
     id
     description

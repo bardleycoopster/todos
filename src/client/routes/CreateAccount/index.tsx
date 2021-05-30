@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useCreateAccountMutation } from "client/types/graphql-schema-types";
+import { useCreateAccountMutation } from "types/graphql-schema-types";
 import { useHistory } from "react-router-dom";
 import { Link, Redirect } from "react-router-dom";
 import Header from "client/components/Header";

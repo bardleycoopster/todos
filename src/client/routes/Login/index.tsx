@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useHistory, Redirect } from "react-router-dom";
-import { useLoginMutation } from "client/types/graphql-schema-types";
-
+import { useLoginMutation } from "types/graphql-schema-types";
 import Header from "client/components/Header";
 import PageContent from "client/components/PageContent";
 import Notification from "client/components/Notification";

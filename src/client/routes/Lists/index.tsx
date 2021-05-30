@@ -8,7 +8,7 @@ import {
   ListsQuery,
   ListsDocument,
   List,
-} from "client/types/graphql-schema-types";
+} from "types/graphql-schema-types";
 
 import Header from "client/components/Header";
 import Button from "client/components/Button";

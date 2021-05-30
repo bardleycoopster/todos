@@ -10,6 +10,7 @@ import { GraphQLFileLoader } from "@graphql-tools/graphql-file-loader";
 import { addResolversToSchema } from "@graphql-tools/schema";
 import jwt, { VerifyErrors } from "jsonwebtoken";
 
+import { JwtPayload } from "types";
 import graphqlResolvers from "./graphql/resolvers";
 import context from "./graphql/context";
 import config from "./config.json";
@@ -23,7 +24,7 @@ const graphqlSchema = loadSchemaSync(schemaPath, {
 
 const schemaWithResolvers = addResolversToSchema({
   schema: graphqlSchema,
-  resolvers: graphqlResolvers,
+  resolvers: graphqlResolvers as any,
 });
 
 const apolloServer = new ApolloServer({
@@ -88,7 +89,8 @@ async function start() {
             jwt.verify(
               token,
               config.jwt.secret,
-              (err: VerifyErrors | null, decoded: any) => {
+              (err: VerifyErrors | null, decoded: object | undefined) => {
+                const decodedPayload = decoded as JwtPayload;
                 if (err) {
                   if (err.name === "TokenExpiredError") {
                     throw new Error("JWT expired");
@@ -97,10 +99,10 @@ async function start() {
                   }
                 }
 
-                if (decoded) {
+                if (decodedPayload) {
                   user = {
-                    id: decoded.id,
-                    username: decoded.username,
+                    id: decodedPayload.id,
+                    username: decodedPayload.username,
                   };
                 }
               }

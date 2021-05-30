@@ -84,18 +84,18 @@ type Query {
 }
 
 type Mutation {
-  login(input: LoginInput): LoginResponse!
-  createAccount(input: CreateAccountInput): CreateAccountResponse!
+  login(input: LoginInput!): LoginResponse!
+  createAccount(input: CreateAccountInput!): CreateAccountResponse!
 
-  createList(input: CreateListInput): List!
-  updateList(input: UpdateListInput): List!
+  createList(input: CreateListInput!): List!
+  updateList(input: UpdateListInput!): List!
   deleteList(id: ID!): ID!
   shareLists(input: ShareListsInput!): User!
   unshareLists(id: ID!): ID!
 
-  createListItem(input: CreateListItemInput): ListItem!
-  updateListItem(input: UpdateListItemInput): ListItem!
-  completeListItem(input: CompleteListItemInput): ListItem!
+  createListItem(input: CreateListItemInput!): ListItem!
+  updateListItem(input: UpdateListItemInput!): ListItem!
+  completeListItem(input: CompleteListItemInput!): ListItem!
   removeCompletedListItems(listId: ID!): Int!
 }
 

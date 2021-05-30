@@ -10,6 +10,7 @@
     "@types/history": "^4.7.8",
     "@types/jest": "^26.0.15",
     "@types/node": "^12.19.4",
+    "@types/pg": "^7.14.11",
     "@types/react": "^16.9.56",
     "@types/react-dom": "^16.9.9",
     "@types/react-router-dom": "^5.1.6",
@@ -37,6 +38,7 @@
     "@graphql-codegen/typescript": "^1.17.11",
     "@graphql-codegen/typescript-operations": "^1.17.11",
     "@graphql-codegen/typescript-react-apollo": "^2.2.0",
+    "@graphql-codegen/typescript-resolvers": "^1.19.1",
     "@testing-library/jest-dom": "^5.11.6",
     "@testing-library/react": "^11.2.2",
     "@testing-library/user-event": "^12.2.2",
@@ -44,6 +46,7 @@
     "copy-webpack-plugin": "^6.4.1",
     "nodemon": "^2.0.6",
     "postcss-cli": "^8.3.0",
+    "schemats": "^3.0.3",
     "tailwindcss": "^2.0.1-compat",
     "ts-loader": "^8.2.0",
     "typescript": "^4.0.5",
@@ -52,18 +55,19 @@
     "webpack-node-externals": "^3.0.0"
   },
   "scripts": {
-    "build:style:dev": "postcss src/client/styles/index.css --watch -o src/client/styles/generated/tailwind.css --env development",
-    "generate:types:dev": "graphql-codegen --watch",
+    "start": "concurrently --kill-others --prefix-colors cyan,green,blue,magenta \"npm:build:style:dev\" \"npm:start:client\" \"npm:start:server\" \"npm:generate:types:dev\"",
     "start:client": "wait-on -l tcp:8000  & react-scripts start",
     "start:server": "NODE_ENV=development concurrently --handle-input -p name -c \"yellow,magenta\" -n \"webpack-server,nodemon-server\" \"npm run start:server:webpack\" \"npm run start:server:nodemon\"",
-    "start:server:webpack": "webpack --config webpack.config.server.js --watch",
+    "start:server:webpack": "npm run generate:db-types && webpack --config webpack.config.server.js --watch",
     "start:server:nodemon": "rm -f buildServer/server.js && wait-on -l buildServer/server.js && nodemon -e js,json,sql,graphql --ignore '*.test.ts' buildServer/server.js",
-    "start": "concurrently --kill-others --prefix-colors cyan,green,blue,magenta \"npm:build:style:dev\" \"npm:start:client\" \"npm:start:server\" \"npm:generate:types:dev\"",
+    "build:style:dev": "postcss src/client/styles/index.css --watch -o src/client/styles/generated/tailwind.css --env development",
     "build:style:prod": "postcss src/client/styles/index.css -o src/client/styles/generated/tailwind.css --env production",
     "build:client": "npm run build:style:prod && npm run generate:types:prod && react-scripts build",
-    "build:server": "webpack --config webpack.config.server.js",
-    "generate:types:prod": "graphql-codegen --config codegen.yml",
+    "build:server": "npm run generate:db-types && webpack --config webpack.config.server.js",
     "build": "concurrently --kill-others --prefix-colors cyan,green \"npm:build:client\" \"npm:build:server\"",
+    "generate:types:dev": "graphql-codegen --watch",
+    "generate:types:prod": "graphql-codegen --config codegen.yml",
+    "generate:db-types": "schemats generate -c postgres://todos@localhost/todos -o src/types/db-schema-types.ts",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -76,7 +80,7 @@
   },
   "browserslist": {
     "production": [
-      ">0.2%",
+      ">1%",
       "not dead",
       "not op_mini all"
     ],

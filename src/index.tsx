@@ -31,6 +31,15 @@ async function main() {
           },
         },
       },
+      List: {
+        fields: {
+          items: {
+            merge(existing, incoming) {
+              return incoming;
+            },
+          },
+        },
+      },
     },
   });
 
@@ -109,7 +118,7 @@ async function main() {
     cache: cache,
     link: ApolloLink.from([
       authMiddleware,
-      (errorLink as unknown) as ApolloLink,
+      errorLink as unknown as ApolloLink,
       splitLink,
     ]),
   });

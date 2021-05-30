@@ -1,4 +1,4 @@
-mutation createAccount($input: CreateAccountInput) {
+mutation createAccount($input: CreateAccountInput!) {
   createAccount(input: $input) {
     jwt
   }

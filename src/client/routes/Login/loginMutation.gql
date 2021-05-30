@@ -1,4 +1,4 @@
-mutation login($input: LoginInput) {
+mutation login($input: LoginInput!) {
   login(input: $input) {
     jwt
   }

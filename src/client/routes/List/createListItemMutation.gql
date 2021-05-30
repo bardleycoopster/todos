@@ -1,4 +1,4 @@
-mutation createListItem($input: CreateListItemInput) {
+mutation createListItem($input: CreateListItemInput!) {
   createListItem(input: $input) {
     id
     description

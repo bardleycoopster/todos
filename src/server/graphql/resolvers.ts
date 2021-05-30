@@ -1,46 +1,68 @@
-const { ApolloError, PubSub, withFilter } = require("apollo-server-express");
-const jwt = require("jsonwebtoken");
-const crypto = require("../utils/crypto");
-const db = require("../db");
-const config = require("../config.json");
+import { ApolloError, PubSub, withFilter } from "apollo-server-express";
+import jwt from "jsonwebtoken";
+import { Resolvers, User, List, ListItem } from "types/graphql-schema-types";
+import {
+  users as UsersResult,
+  lists as ListsResult,
+  list_items as ListItemsResult,
+  // shared_lists as SharedListsResult,
+} from "types/db-schema-types";
+import { verify, kdf } from "../utils/crypto";
+import db from "../db";
+import config from "../config.json";
 
 const pubsub = new PubSub();
 const LIST_ITEM_CHANGED = "LIST_ITEM_CHANGED";
 const COMPLETED_LIST_ITEMS_REMOVED = "COMPLETED_LIST_ITEMS_REMOVED";
 
-const convertDbRowToUser = (row) => {
-  if (!row) {
-    return row;
-  }
+type ListResult = ListsResult & { owner_id: number; is_shared: boolean };
 
+export type ResolvedList = Pick<
+  List,
+  "id" | "name" | "createdAt" | "updatedAt"
+> & {
+  ownerId?: string;
+  shared?: boolean;
+};
+
+export type ResolvedListItem = Pick<
+  ListItem,
+  "id" | "description" | "complete" | "position" | "createdAt" | "updatedAt"
+> & {
+  listId: string;
+  lastUpdatedUserId?: string | null;
+};
+export type ResolvedUser = Pick<User, "id" | "username" | "email">;
+
+const convertDbRowToUser = (row: UsersResult): ResolvedUser => {
   return {
-    id: row.id,
+    id: row.id.toString(),
     username: row.username,
     email: row.email,
   };
 };
 
-const convertDbRowToList = (row) => {
-  if (!row) {
-    return row;
-  }
-
-  return {
-    id: row.id,
+const convertDbRowToList = (row: ListsResult | ListResult): ResolvedList => {
+  const data: ResolvedList = {
+    id: row.id.toString(),
     name: row.name,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    ownerId: row.owner_id,
-    shared: row.is_shared,
   };
-};
 
-const convertDbRowToListItem = (row) => {
-  if (!row) {
-    return row;
+  if ("owner_id" in row) {
+    data.ownerId = row.owner_id.toString();
   }
 
-  return {
+  if ("is_shared" in row) {
+    data.shared = row.is_shared;
+  }
+
+  return data;
+};
+
+const convertDbRowToListItem = (row: ListItemsResult): ResolvedListItem => {
+  const data: ResolvedListItem = {
     id: row.id.toString(),
     listId: row.list_id.toString(),
     description: row.description,
@@ -48,16 +70,22 @@ const convertDbRowToListItem = (row) => {
     position: row.position,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    lastUpdatedUserId: row.last_user_id,
   };
+
+  if ("last_user_id" in row) {
+    data.lastUpdatedUserId = row.last_user_id?.toString();
+  }
+
+  return data;
 };
 
-const getUser = async (userId) => {
+const getUser = async (userId: string): Promise<ResolvedUser> => {
   let result;
   try {
-    result = await db.query("select * from users where id = $1 limit 1;", [
-      userId,
-    ]);
+    result = await db.query<UsersResult>(
+      "select * from users where id = $1 limit 1;",
+      [userId]
+    );
   } catch (e) {
     throw new ApolloError("Invalid user query", "BAD_REQUEST", { error: e });
   }
@@ -69,10 +97,13 @@ const getUser = async (userId) => {
   return convertDbRowToUser(result.rows[0]);
 };
 
-const getList = async (listId, userId) => {
+const getList = async (
+  listId: string,
+  userId: string
+): Promise<ResolvedList> => {
   let result;
   try {
-    result = await db.query(
+    result = await db.query<ListResult>(
       `select 
           l.*, 
           coalesce(sl.owner_id, l.user_id) as owner_id,
@@ -94,10 +125,10 @@ const getList = async (listId, userId) => {
   return convertDbRowToList(result.rows[0]);
 };
 
-const getLists = async (userId) => {
+const getLists = async (userId: string) => {
   let result;
   try {
-    result = await db.query(
+    result = await db.query<ListResult>(
       `select 
             l.*, 
             coalesce(sl.owner_id, l.user_id) as owner_id,
@@ -115,10 +146,10 @@ const getLists = async (userId) => {
   return result.rows.map(convertDbRowToList);
 };
 
-const getListItems = async (listId) => {
+const getListItems = async (listId: string): Promise<ResolvedListItem[]> => {
   let result;
   try {
-    result = await db.query(
+    result = await db.query<ListItemsResult>(
       `select * from list_items
       where list_id = $1
       order by position;`,
@@ -131,21 +162,28 @@ const getListItems = async (listId) => {
   return result.rows.map(convertDbRowToListItem);
 };
 
+type Context = {
+  user: {
+    id: string;
+    username: string;
+  };
+};
+
 // Provide resolver functions for your schema fields
-module.exports = {
+const resolvers: Resolvers<Context> = {
   Query: {
-    user: async (_, args, { user }) => {
-      return getUser(user.id);
+    user: async (parent, args, { user }) => {
+      return getUser(user.id) as Promise<User>;
     },
-    lists: async (parent, args, { user }) => {
-      return getLists(user.id);
+    lists: async (_parent, _args, { user }) => {
+      return getLists(user.id) as Promise<Array<List>>;
     },
     list: async (_, { id }, { user }) => {
       return getList(id, user.id);
     },
     shareListsUsers: async (parent, args, { user }) => {
       try {
-        const result = await db.query(
+        const result = await db.query<UsersResult>(
           `select u.* 
           from shared_lists sl 
           inner join users u 
@@ -154,7 +192,7 @@ module.exports = {
           [user.id]
         );
 
-        return result.rows.map(convertDbRowToUser);
+        return result.rows.map(convertDbRowToUser) as User[];
       } catch (e) {
         throw new ApolloError("Invalid DB query", "BAD_REQUEST", { error: e });
       }
@@ -168,7 +206,7 @@ module.exports = {
 
       let result;
       try {
-        result = await db.query(
+        result = await db.query<UsersResult>(
           `select id, username, password 
           from users 
           where username = $1 limit 1;`,
@@ -188,7 +226,7 @@ module.exports = {
 
       let isVerified;
       try {
-        isVerified = await crypto.verify(password, user.password);
+        isVerified = await verify(password, user.password);
       } catch (e) {
         throw new ApolloError("Error validating password", "BAD_REQUEST", {
           error: e,
@@ -219,7 +257,7 @@ module.exports = {
 
       let result;
       try {
-        result = await db.query(
+        result = await db.query<UsersResult>(
           `select id, username, password 
           from users
            where username = $1 limit 1;`,
@@ -238,13 +276,14 @@ module.exports = {
 
       let key;
       try {
-        key = await crypto.kdf(password);
+        key = await kdf(password);
       } catch (e) {
         throw new ApolloError("Invalid password", "BAD_REQUEST", { error: e });
       }
 
+      let result2: any;
       try {
-        result = await db.query(
+        result2 = await db.query<UsersResult>(
           `insert into 
           users (username, password, email) 
           values ($1, $2, $3) 
@@ -258,7 +297,7 @@ module.exports = {
       }
 
       const token = jwt.sign(
-        { id: result.id, username: result.username },
+        { id: result2.id, username: result2.username },
         config.jwt.secret,
         {
           expiresIn: config.jwt.expiry,
@@ -270,7 +309,7 @@ module.exports = {
     createList: async (_, { input: { name, position } }, { user }) => {
       let result;
       try {
-        result = await db.query(
+        result = await db.query<ListsResult>(
           `insert into lists
           (user_id, name)
           values
@@ -282,7 +321,7 @@ module.exports = {
         throw new ApolloError("DB query failed", "BAD_REQUEST", { error: e });
       }
 
-      return convertDbRowToList(result.rows[0]);
+      return convertDbRowToList(result.rows[0]) as List;
     },
     updateList: async (_, { input: { name, position } }) => {
       throw new ApolloError("Not Implemented", "NOT_IMPLEMENTED");
@@ -308,7 +347,7 @@ module.exports = {
     shareLists: async (parent, { input: { username, email } }, { user }) => {
       let userResult;
       try {
-        userResult = await db.query(
+        userResult = await db.query<UsersResult>(
           `select id, username
           from users
           where username=$1 or email=$2
@@ -323,7 +362,7 @@ module.exports = {
         throw new ApolloError("User not found", "BAD_REQUEST");
       }
 
-      const guestId = userResult.rows[0].id;
+      const guestId = userResult.rows[0].id.toString();
 
       if (guestId === user.id) {
         throw new ApolloError("Cannot share with yourself", "BAD_REQUEST");
@@ -349,7 +388,7 @@ module.exports = {
         );
       }
 
-      return convertDbRowToUser(userResult.rows[0]);
+      return convertDbRowToUser(userResult.rows[0]) as User;
     },
     unshareLists: async (_, { id }, { user }) => {
       let result;
@@ -373,7 +412,7 @@ module.exports = {
       return id;
     },
     createListItem: async (
-      _,
+      parent,
       { input: { listId, description, position } },
       { user }
     ) => {
@@ -385,7 +424,7 @@ module.exports = {
 
       try {
         if (position != null) {
-          result = await db.transaction(async (query) => {
+          result = await db.transaction(async (query: typeof db.query) => {
             await query(
               `update list_items
               set position = position + 1
@@ -425,7 +464,7 @@ module.exports = {
         listItemChanged: listItem,
       });
 
-      return listItem;
+      return listItem as ResolvedListItem;
     },
     updateListItem: async (parent, { input: { description, position } }) => {
       throw new ApolloError("Not Implemented", "NOT_IMPLEMENTED");
@@ -433,7 +472,7 @@ module.exports = {
     completeListItem: async (parent, { input: { id, complete } }, { user }) => {
       let result;
       try {
-        result = await db.query(
+        result = await db.query<any>(
           `update list_items li
           set complete = $2
           from lists l, shared_lists sl
@@ -454,7 +493,7 @@ module.exports = {
         listItemChanged: listItem,
       });
 
-      return listItem;
+      return listItem as ResolvedListItem;
     },
     removeCompletedListItems: async (parent, { listId }) => {
       let result;
@@ -501,16 +540,22 @@ module.exports = {
     items: async (parent, args) => {
       return getListItems(parent.id);
     },
-    owner: async (parent) => {
-      return getUser(parent.ownerId);
+    owner: async (parent: ResolvedList) => {
+      return getUser(parent.ownerId!);
     },
   },
   ListItem: {
     lastUpdatedUser: async (parent) => {
-      return getUser(parent.lastUpdatedUserId);
+      if (parent.lastUpdatedUserId) {
+        return getUser(parent.lastUpdatedUserId);
+      } else {
+        return null;
+      }
     },
     list: async (parent, args, { user }) => {
       return getList(parent.listId, user.id);
     },
   },
 };
+
+export default resolvers;

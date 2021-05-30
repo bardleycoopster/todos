@@ -1,10 +1,16 @@
 generates:
-  ./src/client/types/graphql-schema-types.ts:
+  ./src/types/graphql-schema-types.ts:
     schema: "src/server/graphql/schema.graphql"
     documents: "src/client/**/*.{ts,tsx,gql,graphql}"
     plugins:
       - typescript
+      - typescript-resolvers
       - typescript-operations
       - typescript-react-apollo
     config:
       withHooks: true
+      mappers: 
+        List: ../server/graphql/resolvers#ResolvedList
+        ListItem: ../server/graphql/resolvers#ResolvedListItem
+        User: ../server/graphql/resolvers#ResolvedUser
+

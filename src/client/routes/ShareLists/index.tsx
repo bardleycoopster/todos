@@ -11,7 +11,7 @@ import {
   useShareListsUsersQuery,
   ShareListsUsersDocument,
   ShareListsUsersQuery,
-} from "client/types/graphql-schema-types";
+} from "types/graphql-schema-types";
 
 const ShareLists = () => {
   const [val, setVal] = useState("");
