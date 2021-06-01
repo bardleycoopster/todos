@@ -11,6 +11,6 @@
     "moduleResolution": "node",
     "types": ["@types/jest"]
   },
-  "exclude": ["../../build", "../client"],
+  "exclude": ["../../build", "../client", "**/*.test.js"],
   "include": [".", "../shared"]
 }
