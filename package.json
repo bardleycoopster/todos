@@ -72,6 +72,7 @@
     "generate:db-types": "schemats generate -c postgres://todos@localhost/todos -o src/types/db-schema-types.ts",
     "test:client": "react-scripts test",
     "test:server": "jest -c src/server/jest.config.js src/server",
+    "test": "npm run test:client && npm run test:server",
     "eject": "react-scripts eject"
   },
   "proxy": "http://localhost:8000",

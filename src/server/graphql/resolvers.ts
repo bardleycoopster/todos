@@ -75,7 +75,7 @@ const resolvers: Resolvers<Context> = {
       throw new ApolloError("Not Implemented", "NOT_IMPLEMENTED");
     },
     completeListItem: async (parent, { input: { id, complete } }, { user }) => {
-      return completeListItem(user.id, id, complete || true);
+      return completeListItem(user.id, id, complete ?? true);
     },
     removeCompletedListItems: async (parent, { listId }, { user }) => {
       return removeCompletedListItems(user.id, listId);
