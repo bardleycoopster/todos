@@ -463,7 +463,6 @@ export const completeListItem = async (
   complete: boolean
 ) => {
   let result;
-  console.log(userId, listItemId, complete);
   try {
     result = await db.query<any>(
       `update list_items li

@@ -13,9 +13,11 @@ import {
 import Header from "client/components/Header";
 import Button from "client/components/Button";
 import PageContent from "client/components/PageContent";
+import useToast from "client/components/Toast/useToast";
 
 const Lists = () => {
   const [newListName, setNewListName] = useState("");
+  const showToast = useToast();
 
   const { data, error } = useListsQuery({
     fetchPolicy: "cache-and-network",
@@ -23,10 +25,18 @@ const Lists = () => {
       // const unauthenticated = error?.networkError?.result.errors.some((err) => {
       //   return err.extensions.code === "UNAUTHENTICATED";
       // });
+      showToast({ message: "Request failed", type: "error" });
     },
+    onCompleted: () => {},
   });
 
   const [createList] = useCreateListMutation({
+    onError: () => {
+      showToast({ message: "Create list failed", type: "error" });
+    },
+    onCompleted: () => {
+      showToast({ message: "Created List" });
+    },
     update: (cache, { data }) => {
       if (!data?.createList) {
         return;

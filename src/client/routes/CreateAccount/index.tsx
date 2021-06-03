@@ -5,13 +5,19 @@ import { Link, Redirect } from "react-router-dom";
 import Header from "client/components/Header";
 import PageContent from "client/components/PageContent";
 import Notification from "client/components/Notification";
+import useToast from "client/components/Toast/useToast";
 
 const CreateAccount = () => {
+  const showToast = useToast();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [createAccount] = useCreateAccountMutation();
+  const [createAccount] = useCreateAccountMutation({
+    onError: () => {
+      showToast({ message: "Create account failed", type: "error" });
+    },
+  });
   const history = useHistory<IHistoryState>();
 
   const token = localStorage.getItem("token");

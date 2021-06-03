@@ -4,12 +4,18 @@ import { useLoginMutation } from "types/graphql-schema-types";
 import Header from "client/components/Header";
 import PageContent from "client/components/PageContent";
 import Notification from "client/components/Notification";
+import useToast from "client/components/Toast/useToast";
 
 const Login = () => {
+  const showToast = useToast();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [login] = useLoginMutation();
+  const [login] = useLoginMutation({
+    onError: () => {
+      showToast({ message: "Login failed", type: "error" });
+    },
+  });
   const history = useHistory<IHistoryState>();
 
   const token = localStorage.getItem("token");
