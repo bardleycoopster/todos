@@ -1,13 +1,13 @@
 import { Pool } from "pg";
-import config from "../config.json";
+import config from "../../../database.json";
 let dbConfig;
 
 if (process.env.NODE_ENV === "production") {
-  dbConfig = config.database.production;
+  dbConfig = config.production;
 } else if (process.env.NODE_ENV === "test") {
-  dbConfig = config.database.test;
+  dbConfig = config.test;
 } else {
-  dbConfig = config.database.development;
+  dbConfig = config.development;
 }
 
 const pool = new Pool(dbConfig);

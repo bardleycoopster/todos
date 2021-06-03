@@ -2,25 +2,5 @@
   "jwt": {
     "secret": "test",
     "expiry": 604800
-  },
-  "database": {
-    "development": {
-      "user": "todos",
-      "password": "todos",
-      "database": "todos",
-      "host": "127.0.0.1"
-    },
-    "test": {
-      "user": "todos_test",
-      "password": "todos_test",
-      "database": "todos_test",
-      "host": "127.0.0.1"
-    },
-    "production": {
-      "user": "",
-      "password": "",
-      "database": "",
-      "host": ""
-    }
   }
 }

@@ -1,0 +1,23 @@
+{
+    "development": {
+        "driver": "pg",
+        "user": "todos",
+        "password": "todos",
+        "database": "todos",
+        "host": "127.0.0.1"
+    },
+    "test": {
+        "driver": "pg",
+        "user": "todos_test",
+        "password": "todos_test",
+        "database": "todos_test",
+        "host": "127.0.0.1"
+    },
+    "production": {
+        "driver": "pg",
+        "user": "",
+        "password": "",
+        "database": "",
+        "host": ""
+    }
+}
