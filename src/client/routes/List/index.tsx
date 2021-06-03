@@ -14,6 +14,7 @@ import {
 import Header from "client/components/Header";
 import Button from "client/components/Button";
 import PageContent from "client/components/PageContent";
+import useToast from "client/components/Toast/useToast";
 
 interface Props {
   match: {
@@ -22,12 +23,16 @@ interface Props {
 }
 
 const List = ({ match }: Props) => {
+  const showToast = useToast();
   const [newTodoText, setNewTodoText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { error, data: listData } = useListQuery({
     variables: { id: match.params.listId },
     fetchPolicy: "cache-and-network",
+    onError: () => {
+      showToast({ message: "Request failed", type: "error" });
+    },
   });
 
   const { error: subscriptionError } = useOnListItemChangedSubscription({
@@ -67,6 +72,9 @@ const List = ({ match }: Props) => {
   });
 
   const [createListItem] = useCreateListItemMutation({
+    onError: () => {
+      showToast({ message: "Create todo failed", type: "error" });
+    },
     update: (cache, { data: result }) => {
       if (!result) {
         return;
@@ -101,9 +109,19 @@ const List = ({ match }: Props) => {
     },
   });
 
-  const [completeListItem] = useCompleteListItemMutation();
+  const [completeListItem] = useCompleteListItemMutation({
+    onError: () => {
+      showToast({ message: "Marking todo failed", type: "error" });
+    },
+    onCompleted: () => {
+      showToast({ message: "Marked todo" });
+    },
+  });
 
   const [removeCompletedListItems] = useRemoveCompletedListItemsMutation({
+    onError: () => {
+      showToast({ message: "Remove completed todos failed", type: "error" });
+    },
     update: (cache, { data }) => {
       if (!data?.removeCompletedListItems) {
         return;

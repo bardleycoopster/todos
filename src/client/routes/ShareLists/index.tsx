@@ -4,6 +4,7 @@ import Header from "client/components/Header";
 import PageContent from "client/components/PageContent";
 import Notification from "client/components/Notification";
 import Button from "client/components/Button";
+import useToast from "client/components/Toast/useToast";
 
 import {
   useShareListsMutation,
@@ -14,11 +15,15 @@ import {
 } from "types/graphql-schema-types";
 
 const ShareLists = () => {
+  const showToast = useToast();
   const [val, setVal] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const { data } = useShareListsUsersQuery({
     fetchPolicy: "cache-and-network",
+    onError: () => {
+      showToast({ message: "Request failed", type: "error" });
+    },
   });
 
   const [shareLists] = useShareListsMutation({
