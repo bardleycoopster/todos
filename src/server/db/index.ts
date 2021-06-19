@@ -1,15 +1,21 @@
 import { Pool } from "pg";
 import config from "../../../database.json";
-let dbConfig;
 
+let dbConfig;
 if (process.env.NODE_ENV === "production") {
-  dbConfig = config.production;
+  dbConfig = {
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_DATABASE,
+    host: process.env.DB_HOST,
+  };
 } else if (process.env.NODE_ENV === "test") {
   dbConfig = config.test;
 } else {
   dbConfig = config.development;
 }
 
+console.log("DB config host:", process.env.DB_HOST, dbConfig.host);
 const pool = new Pool(dbConfig);
 
 function query<

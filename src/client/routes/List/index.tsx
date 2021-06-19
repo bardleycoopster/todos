@@ -23,7 +23,7 @@ interface Props {
 }
 
 const List = ({ match }: Props) => {
-  const showToast = useToast();
+  const { showToast } = useToast();
   const [newTodoText, setNewTodoText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 

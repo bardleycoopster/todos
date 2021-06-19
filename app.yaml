@@ -1,0 +1,4 @@
+runtime: nodejs14
+entrypoint: 'node buildServer/server.js'
+includes:
+  - secrets.yaml

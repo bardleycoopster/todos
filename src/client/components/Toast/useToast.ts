@@ -2,8 +2,7 @@ import { useContext } from "react";
 import ToastContext from "./ToastContext";
 
 const useToast = () => {
-  const { showToast } = useContext(ToastContext);
-  return showToast;
+  return useContext(ToastContext);
 };
 
 export default useToast;

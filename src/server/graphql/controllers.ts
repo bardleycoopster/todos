@@ -1,4 +1,4 @@
-import { ApolloError } from "apollo-server-express";
+import { ApolloError, UserInputError } from "apollo-server-express";
 import jwt from "jsonwebtoken";
 
 import { User, List, ListItem } from "types/graphql-schema-types";
@@ -89,7 +89,7 @@ export const getUser = async (userId: string): Promise<ResolvedUser> => {
   }
 
   if (result.rowCount === 0) {
-    throw new ApolloError("User not found", "BAD_REQUEST");
+    throw new ApolloError("User not found");
   }
 
   return convertDbRowToUser(result.rows[0]);
@@ -180,8 +180,16 @@ export const getSharedListsUsers = async (userId: string) => {
 };
 
 export const login = async (username: string, password: string) => {
-  if (!username || !password) {
-    throw new ApolloError("Missing username or password", "BAD_REQUEST");
+  if (!username) {
+    throw new UserInputError("Missing username", {
+      username: "Username is required.",
+    });
+  }
+
+  if (!password) {
+    throw new UserInputError("Missing password", {
+      password: "Password is required.",
+    });
   }
 
   let result;
@@ -199,7 +207,9 @@ export const login = async (username: string, password: string) => {
   }
 
   if (result.rows.length !== 1) {
-    throw new ApolloError("User not found", "BAD_REQUEST");
+    throw new UserInputError("User not found", {
+      username: "Username not found.",
+    });
   }
 
   const user = result.rows[0];
@@ -214,7 +224,9 @@ export const login = async (username: string, password: string) => {
   }
 
   if (!isVerified) {
-    throw new ApolloError("Invalid password", "BAD_REQUEST");
+    throw new UserInputError("Invalid password", {
+      password: "Password is incorrect.",
+    });
   }
 
   const token = jwt.sign(

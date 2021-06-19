@@ -17,7 +17,7 @@ import useToast from "client/components/Toast/useToast";
 
 const Lists = () => {
   const [newListName, setNewListName] = useState("");
-  const showToast = useToast();
+  const { showToast } = useToast();
 
   const { data, error } = useListsQuery({
     fetchPolicy: "cache-and-network",

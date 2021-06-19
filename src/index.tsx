@@ -45,13 +45,13 @@ async function main() {
 
   const host =
     process.env.NODE_ENV === "production"
-      ? window.location.host
-      : "localhost:8000";
+      ? `wss://"${window.location.host}`
+      : "ws://localhost:8000";
 
   const token = localStorage.getItem("token");
 
   const wsLink = new WebSocketLink({
-    uri: `ws://${host}/subscriptions`,
+    uri: `${host}/subscriptions`,
     options: {
       reconnect: true,
       connectionParams: {
@@ -133,7 +133,7 @@ async function main() {
 
 main();
 
-serviceWorkerRegistration.register();
+serviceWorkerRegistration.unregister();
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

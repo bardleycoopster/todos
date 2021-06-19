@@ -51,6 +51,10 @@ app.get("*", (req, res) => {
 });
 
 async function start() {
+  const PORT = process.env.PORT || 8000;
+  console.log(
+    `Starting server: PORT=${PORT}, NODE_ENV=${process.env.NODE_ENV}.`
+  );
   try {
     await db.verifyConnection();
     console.log("DB connection verified.");
@@ -65,7 +69,6 @@ async function start() {
   const httpServer = http.createServer(app);
   apolloServer.applyMiddleware({ app });
 
-  const PORT = process.env.PORT || 8000;
   await new Promise((resolve) => httpServer.listen(PORT, resolve));
 
   console.log(`HTTP server started.`);

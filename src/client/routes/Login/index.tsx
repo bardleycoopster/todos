@@ -1,21 +1,51 @@
-import React, { useState } from "react";
+import React from "react";
 import { useHistory, Redirect } from "react-router-dom";
+import { useForm } from "react-hook-form";
 import { useLoginMutation } from "types/graphql-schema-types";
 import Header from "client/components/Header";
 import PageContent from "client/components/PageContent";
-import Notification from "client/components/Notification";
+import TextField from "client/components/TextField";
 import useToast from "client/components/Toast/useToast";
 
+let toastId: number;
+
+type FormData = {
+  username: string;
+  password: string;
+};
+
 const Login = () => {
-  const showToast = useToast();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const { showToast, clearToast } = useToast();
+  const {
+    register,
+    formState: { isValid, isSubmitted, errors },
+    handleSubmit,
+    setError,
+  } = useForm<FormData>();
+
   const [login] = useLoginMutation({
-    onError: () => {
-      showToast({ message: "Login failed", type: "error" });
+    onError: (e) => {
+      e.graphQLErrors.forEach((error) => {
+        if (error?.extensions?.fields?.username) {
+          setError(
+            "username",
+            { message: error?.extensions?.username },
+            { shouldFocus: true }
+          );
+        }
+
+        if (error?.extensions?.password) {
+          setError(
+            "password",
+            { message: error?.extensions?.fields?.password },
+            { shouldFocus: true }
+          );
+        }
+      });
+      toastId = showToast({ message: "Login failed", type: "error" });
     },
   });
+
   const history = useHistory<IHistoryState>();
 
   const token = localStorage.getItem("token");
@@ -23,13 +53,13 @@ const Login = () => {
     return <Redirect to="/lists" />;
   }
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async ({ username, password }: FormData) => {
+    clearToast(toastId);
     try {
       const resp = await login({
         variables: { input: { username, password } },
       });
-      if (resp.data) {
+      if (resp?.data) {
         localStorage.setItem("token", resp.data.login.jwt);
 
         if (history.location.state?.referrer) {
@@ -39,8 +69,7 @@ const Login = () => {
         }
       }
     } catch (e) {
-      setError("An error occurred. Please try again.");
-      console.log(e);
+      toastId = showToast({ message: "Login failed", type: "error" });
     }
   };
 
@@ -49,42 +78,37 @@ const Login = () => {
       <Header />
       <PageContent>
         <h2 className="mt-5 text-center text-4xl">Login</h2>
-        <form onSubmit={onSubmit}>
-          <div className="mt-5">
-            <label className="block mb-1" htmlFor="username">
-              Username
-            </label>
-            <input
-              className="w-full text-black py-2 px-2 rounded-sm border-2 border-black"
-              type="text"
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-          </div>
-          <div className="mt-5">
-            <label className="block mb-1" htmlFor="password">
-              Password
-            </label>
-            <input
-              className="w-full text-black py-2 px-2 rounded-sm border-2 border-black"
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <TextField
+            {...register("username", {
+              required: "Username is required.",
+              maxLength: { value: 10, message: "Username is too long." },
+              minLength: { value: 3, message: "Username is too short." },
+            })}
+            id="username"
+            label="Username"
+            error={errors.username}
+          />
+          <TextField
+            {...register("password", {
+              required: "Password is required.",
+              minLength: { value: 8, message: "Password is too short." },
+            })}
+            id="password"
+            type="password"
+            label="Password"
+            error={errors.password}
+          />
           <div className="text-right mt-6">
             <input
               className="py-2 px-5 bg-gradient-to-br from-purple-400 to-pink-500  rounded-sm text-white font-semibold hover:from-purple-500 hover:to-pink-600 shadow-lg focus:outline-none"
               type="submit"
               value="LOGIN"
-              disabled={!username || !password}
+              disabled={!isValid && isSubmitted}
             />
           </div>
         </form>
       </PageContent>
-      <Notification error={error} />
     </div>
   );
 };

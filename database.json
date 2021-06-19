@@ -15,9 +15,17 @@
     },
     "production": {
         "driver": "pg",
-        "user": "",
-        "password": "",
-        "database": "",
-        "host": ""
+        "user": {
+            "ENV": "DB_USER"
+        },
+        "password": {
+            "ENV": "DB_PASSWORD"
+        },
+        "database": {
+            "ENV": "DB_DATABASE"
+        },
+        "host": {
+            "ENV": "DB_HOST"
+        }
     }
 }

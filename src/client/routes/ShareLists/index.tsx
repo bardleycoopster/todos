@@ -15,7 +15,7 @@ import {
 } from "types/graphql-schema-types";
 
 const ShareLists = () => {
-  const showToast = useToast();
+  const { showToast } = useToast();
   const [val, setVal] = useState("");
   const [error, setError] = useState<string | null>(null);
 
