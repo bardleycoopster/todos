@@ -7,6 +7,8 @@ import {
 } from "@apollo/client";
 
 import browserHistory from "./browserHistory";
+import ToastProvider from "client/components/Toast/ToastProvider";
+import UserProvider from "client/components/User/UserProvider";
 
 import Home from "client/routes/Home";
 import Lists from "client/routes/Lists";
@@ -15,7 +17,6 @@ import ShareLists from "client/routes/ShareLists";
 import CreateAccount from "client/routes/CreateAccount";
 import Login from "client/routes/Login";
 import Profile from "client/routes/Profile";
-import ToastProvider from "client/components/Toast/ToastProvider";
 
 import "client/styles/generated/tailwind.css";
 
@@ -26,19 +27,21 @@ interface Props {
 function App({ apolloClient }: Props) {
   return (
     <ApolloProvider client={apolloClient}>
-      <ToastProvider>
-        <Router history={browserHistory}>
-          <Switch>
-            <Route exact path="/" component={Home} />
-            <Route exact path="/lists" component={Lists} />
-            <Route exact path="/lists/share" component={ShareLists} />
-            <Route exact path="/lists/:listId" component={List} />
-            <Route exact path="/login" component={Login} />
-            <Route exact path="/create-account" component={CreateAccount} />
-            <Route exact path="/profile" component={Profile} />
-          </Switch>
-        </Router>
-      </ToastProvider>
+      <UserProvider>
+        <ToastProvider>
+          <Router history={browserHistory}>
+            <Switch>
+              <Route exact path="/" component={Home} />
+              <Route exact path="/lists" component={Lists} />
+              <Route exact path="/lists/share" component={ShareLists} />
+              <Route exact path="/lists/:listId" component={List} />
+              <Route exact path="/login" component={Login} />
+              <Route exact path="/create-account" component={CreateAccount} />
+              <Route exact path="/profile" component={Profile} />
+            </Switch>
+          </Router>
+        </ToastProvider>
+      </UserProvider>
     </ApolloProvider>
   );
 }

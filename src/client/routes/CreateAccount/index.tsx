@@ -1,30 +1,62 @@
-import React, { useState } from "react";
+import React, { useRef } from "react";
+import { Link, useHistory, Redirect } from "react-router-dom";
+import { useForm } from "react-hook-form";
+
 import { useCreateAccountMutation } from "types/graphql-schema-types";
-import { useHistory } from "react-router-dom";
-import { Link, Redirect } from "react-router-dom";
 import Header from "client/components/Header";
+import TextField from "client/components/TextField";
 import PageContent from "client/components/PageContent";
 import useToast from "client/components/Toast/useToast";
+import { emailRegex } from "utils/utils";
+
+type FormData = {
+  username: string;
+  email: string;
+  password: string;
+  password2: string;
+};
 
 const CreateAccount = () => {
-  const { showToast } = useToast();
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const { showToast, clearToast } = useToast();
+  const {
+    register,
+    formState: { isValid, isSubmitted, errors },
+    handleSubmit,
+    setError,
+    watch,
+  } = useForm<FormData>();
+
+  const passwordValue = watch("password");
+
   const [createAccount] = useCreateAccountMutation({
     onError: () => {
       showToast({ message: "Create account failed", type: "error" });
     },
   });
   const history = useHistory<IHistoryState>();
+  const toastId = useRef<number>();
 
   const token = localStorage.getItem("token");
   if (token) {
     return <Redirect to="/lists" />;
   }
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async ({
+    username,
+    email,
+    password,
+    password2,
+  }: FormData) => {
+    if (password !== password2) {
+      setError(
+        "password",
+        { message: "Passwords do not match!" },
+        { shouldFocus: true }
+      );
+      setError("password2", { message: "Passwords do not match." });
+      return;
+    }
+
     try {
       const resp = await createAccount({
         variables: { input: { username, password, email } },
@@ -40,7 +72,7 @@ const CreateAccount = () => {
         }
       }
     } catch (e) {
-      setError("An error occurred. Please try again.");
+      toastId.current = showToast({ message: "Login failed", type: "error" });
     }
   };
 
@@ -51,43 +83,54 @@ const CreateAccount = () => {
         <h2 className="mt-10 mb-10 text-center text-3xl font-bold">
           CREATE ACCOUNT
         </h2>
-        <form onSubmit={onSubmit}>
-          <div className="mt-5">
-            <label className="block mb-1" htmlFor="username">
-              Username
-            </label>
-            <input
-              className="w-full text-black py-2 px-2 rounded-sm border-2 border-black"
-              type="text"
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-          </div>
-          <div className="mt-5">
-            <label className="block mb-1" htmlFor="email">
-              Email
-            </label>
-            <input
-              className="w-full text-black py-2 px-2 rounded-sm border-2 border-black"
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          <div className="mt-5">
-            <label className="block mb-1" htmlFor="password">
-              Password
-            </label>
-            <input
-              className="w-full text-black py-2 px-2 rounded-sm border-2 border-black"
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <TextField
+            {...register("username", {
+              required: "Username is required.",
+              maxLength: { value: 10, message: "Username is too long." },
+              minLength: { value: 3, message: "Username is too short." },
+            })}
+            id="username"
+            label="Username"
+            error={errors.username}
+          />
+          <TextField
+            {...register("email", {
+              required: "email is required.",
+              pattern: { value: emailRegex, message: "Invalid email format." },
+            })}
+            id="email"
+            label="email"
+            type="email"
+            error={errors.email}
+          />
+
+          <TextField
+            {...register("password", {
+              required: "Password is required.",
+              minLength: { value: 8, message: "Password is too short." },
+            })}
+            id="password"
+            type="password"
+            label="Password"
+            error={errors.password}
+          />
+
+          <TextField
+            {...register("password2", {
+              required: "Password is required.",
+              minLength: { value: 8, message: "Password is too short." },
+              validate: {
+                passwordsMatch: (v) =>
+                  v === passwordValue || "Passwords do not match.",
+              },
+            })}
+            id="password2"
+            type="password"
+            label="Password again"
+            error={errors.password2}
+          />
+
           <div className="flex items-center justify-between mt-6">
             <Link
               className="text-pink-500 hover:text-pink-700 font-semibold"
@@ -99,7 +142,7 @@ const CreateAccount = () => {
               className="py-2 px-5 bg-gradient-to-br from-purple-400 to-pink-500  rounded-sm text-white font-semibold hover:from-purple-500 hover:to-pink-600 shadow-lg focus:outline-none"
               type="submit"
               value="CREATE ACCOUNT"
-              disabled={!username || !password || !email}
+              disabled={!isValid && isSubmitted}
             />
           </div>
         </form>

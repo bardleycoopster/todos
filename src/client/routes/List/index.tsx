@@ -15,6 +15,7 @@ import Header from "client/components/Header";
 import Button from "client/components/Button";
 import PageContent from "client/components/PageContent";
 import useToast from "client/components/Toast/useToast";
+import useUser from "client/components/User/useUser";
 
 interface Props {
   match: {
@@ -26,6 +27,7 @@ const List = ({ match }: Props) => {
   const { showToast } = useToast();
   const [newTodoText, setNewTodoText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const user = useUser();
 
   const { error, data: listData } = useListQuery({
     variables: { id: match.params.listId },
@@ -33,6 +35,7 @@ const List = ({ match }: Props) => {
     onError: () => {
       showToast({ message: "Request failed", type: "error" });
     },
+    skip: !user,
   });
 
   const { error: subscriptionError } = useOnListItemChangedSubscription({
@@ -159,7 +162,7 @@ const List = ({ match }: Props) => {
 
   const list = listData?.list;
 
-  if (!window.localStorage.getItem("token")) {
+  if (!user) {
     return (
       <Redirect
         to={{

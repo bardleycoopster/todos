@@ -15,7 +15,6 @@ if (process.env.NODE_ENV === "production") {
   dbConfig = config.development;
 }
 
-console.log("DB config host:", process.env.DB_HOST, dbConfig.host);
 const pool = new Pool(dbConfig);
 
 function query<

@@ -15,7 +15,7 @@ const Home = () => {
         <div className="mt-5 bg-gray-800 shadow-md hover:shadow-lg text-center rounded">
           <Link
             className="block py-2 px-3 text-transparent bg-clip-text bg-gradient-to-br from-purple-400 to-pink-500 font-bold text-1xl "
-            to="/create-account"
+            to="/lists"
           >
             GET STARTED
           </Link>

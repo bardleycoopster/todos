@@ -1,7 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import useUser from "client/components/User/useUser";
 
 const Header = () => {
+  const user = useUser();
   return (
     <header className="w-full bg-gray-800 flex justify-center items-center h-14 shadow-lg">
       <Link to="/">
@@ -9,6 +11,11 @@ const Header = () => {
           Todos
         </h1>
       </Link>
+      {user && (
+        <Link to="/profile" className="absolute right-3">
+          {user?.username}
+        </Link>
+      )}
     </header>
   );
 };

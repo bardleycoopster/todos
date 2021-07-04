@@ -14,10 +14,12 @@ import Header from "client/components/Header";
 import Button from "client/components/Button";
 import PageContent from "client/components/PageContent";
 import useToast from "client/components/Toast/useToast";
+import useUser from "client/components/User/useUser";
 
 const Lists = () => {
   const [newListName, setNewListName] = useState("");
   const { showToast } = useToast();
+  const user = useUser();
 
   const { data, error } = useListsQuery({
     fetchPolicy: "cache-and-network",
@@ -28,6 +30,7 @@ const Lists = () => {
       showToast({ message: "Request failed", type: "error" });
     },
     onCompleted: () => {},
+    skip: !user,
   });
 
   const [createList] = useCreateListMutation({
@@ -65,7 +68,7 @@ const Lists = () => {
     createList({ variables: { input: { name: newListName } } });
   };
 
-  if (!window.localStorage.getItem("token")) {
+  if (!user) {
     return (
       <Redirect
         to={{
